@@ -1,0 +1,36 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Rules for users collection and all user subcollections
+    match /users/{userId} {
+      allow read, write: if true;
+
+      match /{allSubcollections=**} {
+        allow read, write: if true;
+      }
+    }
+    
+    // Rules for programs collection
+    match /programs/{programId} {
+      allow create, read, update, delete: if true;
+    }
+    
+    // Rules for logs collection
+    match /logs/{logId} {
+      allow create, read, update, delete: if true;
+    }
+    
+    // Rules for documents collection
+    match /documents/{docId} {
+      allow create, read, update, delete: if true;
+    }
+  }
+}
+
+
