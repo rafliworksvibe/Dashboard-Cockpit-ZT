@@ -915,19 +915,19 @@ export default function App() {
 
       {/* 6. Sticky Bottom Navigation Bar for Mobile View (< md) */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200/80 z-50 shadow-[0_-10px_25px_rgba(0,0,0,0.08)]">
-        <div className={`grid h-18 pb-safe relative items-end pb-1.5 ${
+        <div className={`grid h-16 pb-safe relative items-center ${
           checkIsAdmin(currentUser) ? "grid-cols-5" : "grid-cols-4"
         }`}>
-          {/* Tab: Admin Panel (Only for Admin) */}
+          {/* 1. Menu Admin (Only for Admin) */}
           {checkIsAdmin(currentUser) && (
             <button
               onClick={() => setActiveTab("admin_panel")}
               className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-black tracking-tight transition-all duration-200 cursor-pointer ${
-                activeTab === "admin_panel" ? "text-red-650" : "text-slate-400 hover:text-slate-500"
+                activeTab === "admin_panel" ? "text-red-650" : "text-slate-500 hover:text-slate-700"
               }`}
             >
               <div className={`p-1.5 rounded-xl transition-all ${
-                activeTab === "admin_panel" ? "bg-red-50 text-red-650 scale-105" : "text-slate-400"
+                activeTab === "admin_panel" ? "bg-red-50 text-red-650 scale-105" : "text-slate-500"
               }`}>
                 <Shield className="w-5 h-5" />
               </div>
@@ -935,80 +935,72 @@ export default function App() {
             </button>
           )}
 
-          {/* Tab 1: Dashboard */}
+          {/* 2. Menu Cockpit */}
           <button
             onClick={() => setActiveTab("dashboard")}
             className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-black tracking-tight transition-all duration-200 cursor-pointer ${
-              activeTab === "dashboard" ? "text-[#1e266f]" : "text-slate-400 hover:text-slate-500"
+              activeTab === "dashboard" ? "text-[#1e266f]" : "text-slate-500 hover:text-slate-700"
             }`}
           >
             <div className={`p-1.5 rounded-xl transition-all ${
-              activeTab === "dashboard" ? "bg-[#1e266f]/10 text-[#1e266f] scale-105" : "text-slate-400"
+              activeTab === "dashboard" ? "bg-[#1e266f]/10 text-[#1e266f] scale-105" : "text-slate-500"
             }`}>
               <LayoutDashboard className="w-5 h-5" />
             </div>
             <span className="font-sans font-bold text-[9px]">Cockpit</span>
           </button>
-          
-          {/* Tab 2: Tracker */}
+
+          {/* 3. TOMBOL TAMBAH DI TENGAH (Floating / Prominent Button - Only for Admin) */}
+          {checkIsAdmin(currentUser) && (
+            <div className="flex flex-col items-center justify-center relative -top-3">
+              <button
+                onClick={() => setIsAddModalOpen(true)}
+                className="flex items-center justify-center -mt-2 w-12 h-12 bg-[#f36e21] hover:bg-[#db5610] text-white rounded-full shadow-lg border-4 border-white active:scale-95 transition-transform cursor-pointer z-50"
+                title="Tambah Program Baru"
+              >
+                <Plus className="w-6 h-6 stroke-[3]" />
+              </button>
+              <span className="font-sans font-black text-[#f36e21] text-[9px] mt-0.5 tracking-tight leading-none">Tambah</span>
+            </div>
+          )}
+
+          {/* 4. Menu Tracker */}
           <button
             onClick={() => setActiveTab("tracker")}
             className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-black tracking-tight transition-all duration-200 cursor-pointer ${
-              activeTab === "tracker" ? "text-[#1e266f]" : "text-slate-400 hover:text-slate-500"
+              activeTab === "tracker" ? "text-[#1e266f]" : "text-slate-500 hover:text-slate-700"
             }`}
           >
             <div className={`p-1.5 rounded-xl transition-all ${
-              activeTab === "tracker" ? "bg-[#1e266f]/10 text-[#1e266f] scale-105" : "text-slate-400"
+              activeTab === "tracker" ? "bg-[#1e266f]/10 text-[#1e266f] scale-105" : "text-slate-500"
             }`}>
               <ListTodo className="w-5 h-5" />
             </div>
             <span className="font-sans font-bold text-[9px]">Tracker</span>
           </button>
 
-          {/* Tab 3: Central Raised Plus Button (Only for Admin) */}
-          {checkIsAdmin(currentUser) && (
-            <div className="flex flex-col items-center justify-center relative -top-3">
-              <button
-                onClick={() => {
-                  setIsAddModalOpen(true);
-                }}
-                className="w-12 h-12 rounded-full bg-[#f36e21] hover:bg-[#db5610] text-white flex items-center justify-center shadow-[0_4px_14px_rgba(243,110,33,0.4)] transition-all duration-200 active:scale-95 focus:outline-none border-4 border-white cursor-pointer z-50"
-                title="Tambah Program Baru"
-              >
-                <Plus className="w-6 h-6 stroke-[3]" />
-              </button>
-              <span className="font-sans font-black text-[#f36e21] text-[9px] mt-1.5 tracking-tight leading-none">Tambah</span>
-            </div>
-          )}
-
-          {/* Tab 4: Logs */}
+          {/* 5. Menu Logs / Dokumen */}
           <button
-            onClick={() => setActiveTab("logs")}
+            onClick={() => {
+              if (activeTab === "logs") {
+                setActiveTab("cloud_docs");
+              } else {
+                setActiveTab("logs");
+              }
+            }}
             className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-black tracking-tight transition-all duration-200 cursor-pointer ${
-              activeTab === "logs" ? "text-[#1e266f]" : "text-slate-400 hover:text-slate-500"
+              activeTab === "logs" || activeTab === "cloud_docs" ? "text-[#1e266f]" : "text-slate-500 hover:text-slate-700"
             }`}
+            title="Klik untuk beralih antara Meeting Logs dan Arsip Dokumen"
           >
             <div className={`p-1.5 rounded-xl transition-all ${
-              activeTab === "logs" ? "bg-[#1e266f]/10 text-[#1e266f] scale-105" : "text-slate-400"
+              activeTab === "logs" || activeTab === "cloud_docs" ? "bg-[#1e266f]/10 text-[#1e266f] scale-105" : "text-slate-500"
             }`}>
-              <History className="w-5 h-5" />
+              {activeTab === "cloud_docs" ? <CloudLightning className="w-5 h-5" /> : <History className="w-5 h-5" />}
             </div>
-            <span className="font-sans font-bold text-[9px]">Logs</span>
-          </button>
-
-          {/* Tab 5: Cloud Docs */}
-          <button
-            onClick={() => setActiveTab("cloud_docs")}
-            className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-black tracking-tight transition-all duration-200 cursor-pointer ${
-              activeTab === "cloud_docs" ? "text-[#1e266f]" : "text-slate-400 hover:text-slate-500"
-            }`}
-          >
-            <div className={`p-1.5 rounded-xl transition-all ${
-              activeTab === "cloud_docs" ? "bg-[#1e266f]/10 text-[#1e266f] scale-105" : "text-slate-400"
-            }`}>
-              <CloudLightning className="w-5 h-5" />
-            </div>
-            <span className="font-sans font-bold text-[9px]">Dokumen</span>
+            <span className="font-sans font-bold text-[9px]">
+              {activeTab === "cloud_docs" ? "Dokumen" : "Logs"}
+            </span>
           </button>
         </div>
       </div>
