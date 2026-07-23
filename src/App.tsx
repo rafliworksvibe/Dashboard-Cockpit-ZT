@@ -913,96 +913,75 @@ export default function App() {
         </div>
       </footer>
 
-      {/* 6. Sticky Bottom Navigation Bar for Mobile View (< md) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200/80 z-50 shadow-[0_-10px_25px_rgba(0,0,0,0.08)]">
-        <div className={`grid h-16 pb-safe relative items-center ${
-          checkIsAdmin(currentUser) ? "grid-cols-5" : "grid-cols-4"
-        }`}>
-          {/* 1. Menu Admin (Only for Admin) */}
-          {checkIsAdmin(currentUser) && (
-            <button
-              onClick={() => setActiveTab("admin_panel")}
-              className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-black tracking-tight transition-all duration-200 cursor-pointer ${
-                activeTab === "admin_panel" ? "text-red-650" : "text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              <div className={`p-1.5 rounded-xl transition-all ${
-                activeTab === "admin_panel" ? "bg-red-50 text-red-650 scale-105" : "text-slate-500"
-              }`}>
-                <Shield className="w-5 h-5" />
-              </div>
-              <span className="font-sans font-bold text-[9px]">Admin</span>
-            </button>
-          )}
+      {/* 6. Floating Action Button (FAB) + Khusus Admin di Kanan Bawah */}
+      {(checkIsAdmin(currentUser) || currentUser?.role === "ADMIN") && (
+        <button
+          onClick={() => setIsAddModalOpen(true)}
+          className="fixed bottom-20 right-4 z-50 w-14 h-14 bg-orange-500 hover:bg-orange-600 text-white rounded-full flex items-center justify-center shadow-2xl border-2 border-white active:scale-95 transition-all md:hidden cursor-pointer"
+          title="Tambah Pekerjaan"
+        >
+          <Plus className="w-7 h-7 stroke-[3]" />
+        </button>
+      )}
 
-          {/* 2. Menu Cockpit */}
+      {/* Sticky Bottom Navigation Bar for Mobile View (< md) */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 py-2 flex justify-around items-center z-40 md:hidden shadow-lg">
+        {/* Menu Admin - Hanya untuk Admin */}
+        {(checkIsAdmin(currentUser) || currentUser?.role === "ADMIN") && (
           <button
-            onClick={() => setActiveTab("dashboard")}
-            className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-black tracking-tight transition-all duration-200 cursor-pointer ${
-              activeTab === "dashboard" ? "text-[#1e266f]" : "text-slate-500 hover:text-slate-700"
+            onClick={() => setActiveTab("admin_panel")}
+            className={`flex flex-col items-center justify-center gap-0.5 text-xs cursor-pointer ${
+              activeTab === "admin_panel" ? "text-orange-600 font-bold" : "text-gray-500"
             }`}
           >
-            <div className={`p-1.5 rounded-xl transition-all ${
-              activeTab === "dashboard" ? "bg-[#1e266f]/10 text-[#1e266f] scale-105" : "text-slate-500"
-            }`}>
-              <LayoutDashboard className="w-5 h-5" />
-            </div>
-            <span className="font-sans font-bold text-[9px]">Cockpit</span>
+            <Shield className="w-5 h-5" />
+            <span className="text-[10px]">Admin</span>
           </button>
+        )}
 
-          {/* 3. TOMBOL TAMBAH DI TENGAH (Floating / Prominent Button - Only for Admin) */}
-          {checkIsAdmin(currentUser) && (
-            <div className="flex flex-col items-center justify-center relative -top-3">
-              <button
-                onClick={() => setIsAddModalOpen(true)}
-                className="flex items-center justify-center -mt-2 w-12 h-12 bg-[#f36e21] hover:bg-[#db5610] text-white rounded-full shadow-lg border-4 border-white active:scale-95 transition-transform cursor-pointer z-50"
-                title="Tambah Program Baru"
-              >
-                <Plus className="w-6 h-6 stroke-[3]" />
-              </button>
-              <span className="font-sans font-black text-[#f36e21] text-[9px] mt-0.5 tracking-tight leading-none">Tambah</span>
-            </div>
-          )}
+        {/* Menu Cockpit */}
+        <button
+          onClick={() => setActiveTab("dashboard")}
+          className={`flex flex-col items-center justify-center gap-0.5 text-xs cursor-pointer ${
+            activeTab === "dashboard" ? "text-orange-600 font-bold" : "text-gray-500"
+          }`}
+        >
+          <LayoutDashboard className="w-5 h-5" />
+          <span className="text-[10px]">Cockpit</span>
+        </button>
 
-          {/* 4. Menu Tracker */}
-          <button
-            onClick={() => setActiveTab("tracker")}
-            className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-black tracking-tight transition-all duration-200 cursor-pointer ${
-              activeTab === "tracker" ? "text-[#1e266f]" : "text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            <div className={`p-1.5 rounded-xl transition-all ${
-              activeTab === "tracker" ? "bg-[#1e266f]/10 text-[#1e266f] scale-105" : "text-slate-500"
-            }`}>
-              <ListTodo className="w-5 h-5" />
-            </div>
-            <span className="font-sans font-bold text-[9px]">Tracker</span>
-          </button>
+        {/* Menu Tracker */}
+        <button
+          onClick={() => setActiveTab("tracker")}
+          className={`flex flex-col items-center justify-center gap-0.5 text-xs cursor-pointer ${
+            activeTab === "tracker" ? "text-orange-600 font-bold" : "text-gray-500"
+          }`}
+        >
+          <ListTodo className="w-5 h-5" />
+          <span className="text-[10px]">Tracker</span>
+        </button>
 
-          {/* 5. Menu Logs / Dokumen */}
-          <button
-            onClick={() => {
-              if (activeTab === "logs") {
-                setActiveTab("cloud_docs");
-              } else {
-                setActiveTab("logs");
-              }
-            }}
-            className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-black tracking-tight transition-all duration-200 cursor-pointer ${
-              activeTab === "logs" || activeTab === "cloud_docs" ? "text-[#1e266f]" : "text-slate-500 hover:text-slate-700"
-            }`}
-            title="Klik untuk beralih antara Meeting Logs dan Arsip Dokumen"
-          >
-            <div className={`p-1.5 rounded-xl transition-all ${
-              activeTab === "logs" || activeTab === "cloud_docs" ? "bg-[#1e266f]/10 text-[#1e266f] scale-105" : "text-slate-500"
-            }`}>
-              {activeTab === "cloud_docs" ? <CloudLightning className="w-5 h-5" /> : <History className="w-5 h-5" />}
-            </div>
-            <span className="font-sans font-bold text-[9px]">
-              {activeTab === "cloud_docs" ? "Dokumen" : "Logs"}
-            </span>
-          </button>
-        </div>
+        {/* Menu Logs */}
+        <button
+          onClick={() => setActiveTab("logs")}
+          className={`flex flex-col items-center justify-center gap-0.5 text-xs cursor-pointer ${
+            activeTab === "logs" ? "text-orange-600 font-bold" : "text-gray-500"
+          }`}
+        >
+          <History className="w-5 h-5" />
+          <span className="text-[10px]">Logs</span>
+        </button>
+
+        {/* Menu Dokumen */}
+        <button
+          onClick={() => setActiveTab("cloud_docs")}
+          className={`flex flex-col items-center justify-center gap-0.5 text-xs cursor-pointer ${
+            activeTab === "cloud_docs" ? "text-orange-600 font-bold" : "text-gray-500"
+          }`}
+        >
+          <CloudLightning className="w-5 h-5" />
+          <span className="text-[10px]">Dokumen</span>
+        </button>
       </div>
 
     </div>
