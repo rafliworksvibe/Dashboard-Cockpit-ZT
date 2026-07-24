@@ -71,18 +71,19 @@ export default function ExecutiveReportView({ logs, programs }: ExecutiveReportV
     <div className="space-y-6">
       
       {/* 1. Header and Page Intro */}
-      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex items-start gap-4">
-        <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
-          <PieChart className="w-6 h-6" />
-        </div>
-        <div className="space-y-1">
-          <h2 className="text-base font-extrabold text-slate-900 font-sans tracking-tight">
-            I. PORTFOLIO EXECUTIVE DIAGNOSTICS & STATUS REPORT
-          </h2>
-          <p className="text-xs text-slate-500 leading-relaxed max-w-3xl">
-            Laporan tingkat tinggi kinerja inisiatif transformasi korporasi. Panel ini mendedikasikan analisis diagnostics
-            kesehatan program, tren perubahan status rapat koordinasi, serta penyelarasan program yang terhambat.
-          </p>
+      <div className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
+        <div className="flex items-start sm:items-center gap-2.5 sm:gap-3 min-w-0">
+          <div className="p-2 sm:p-2.5 bg-indigo-50 text-indigo-600 rounded-lg sm:rounded-xl shrink-0 mt-0.5 sm:mt-0">
+            <PieChart className="w-4 h-4 sm:w-5 sm:h-5" />
+          </div>
+          <div className="space-y-0.5 min-w-0">
+            <h2 className="text-xs xs:text-sm sm:text-base font-extrabold text-slate-900 font-sans tracking-tight leading-snug sm:leading-tight">
+              Portfolio Executive Diagnostics & Status Report
+            </h2>
+            <p className="text-[10px] sm:text-xs text-slate-500 leading-normal max-w-2xl hidden xs:block">
+              Laporan tingkat tinggi kinerja inisiatif transformasi korporasi, analisis kesehatan program, tren perubahan status rapat, dan risiko terhambat.
+            </p>
+          </div>
         </div>
       </div>
 

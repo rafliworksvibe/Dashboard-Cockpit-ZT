@@ -317,16 +317,16 @@ export default function MeetingLogsView({ logs, programs, onSubmitLog, currentUs
     <div className="space-y-6">
       
       {/* 1. Page Header & Action Trigger */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-start gap-4">
-          <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl shrink-0">
-            <History className="w-6 h-6" />
+      <div className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
+        <div className="flex items-start sm:items-center gap-2.5 sm:gap-3 min-w-0">
+          <div className="p-2 sm:p-2.5 bg-indigo-50 text-indigo-600 rounded-lg sm:rounded-xl shrink-0 mt-0.5 sm:mt-0">
+            <History className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <div className="space-y-1">
-            <h2 className="text-base font-extrabold text-slate-900 font-sans tracking-tight">
-              Archive of Minutes of Meeting (MoM) & Discussion Logs
+          <div className="space-y-0.5 min-w-0">
+            <h2 className="text-xs xs:text-sm sm:text-base font-extrabold text-slate-900 font-sans tracking-tight leading-snug sm:leading-tight">
+              Meeting Minutes (MoM) & Discussion Notes Archive
             </h2>
-            <p className="text-xs text-slate-500 leading-relaxed max-w-2xl">
+            <p className="text-[10px] sm:text-xs text-slate-500 leading-normal max-w-2xl hidden xs:block">
               Riwayat lengkap semua catatan rapat (MoM), kemajuan mingguan, keputusan dewan direksi, dan justifikasi
               yang mempengaruhi status pekerjaan serta pergeseran persentase progres.
             </p>
@@ -336,11 +336,11 @@ export default function MeetingLogsView({ logs, programs, onSubmitLog, currentUs
           <div className="shrink-0 flex items-center gap-2">
             <button
               onClick={() => setIsAddFormOpen(!isAddFormOpen)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-xs font-bold text-white transition-all shadow-sm cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg text-[10px] sm:text-xs font-bold text-white transition-all shadow-sm cursor-pointer ${
                 isAddFormOpen ? "bg-rose-600 hover:bg-rose-700" : "bg-[#f36e21] hover:bg-[#db5610]"
               }`}
             >
-              {isAddFormOpen ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+              {isAddFormOpen ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
               {isAddFormOpen ? "Tutup Form" : "Buat MoM Baru"}
             </button>
           </div>
@@ -660,7 +660,7 @@ export default function MeetingLogsView({ logs, programs, onSubmitLog, currentUs
               onChange={(e) => setSelectedProgramId(e.target.value)}
               className="w-full text-xs font-semibold pl-8 pr-3 py-2.5 bg-slate-50/85 hover:bg-slate-50 border border-slate-250 rounded-lg transition-colors focus:ring-1 focus:ring-indigo-500 text-slate-750"
             >
-              <option value="all">Semua Program / Initiative ({programs.length})</option>
+              <option value="all">Program / Initiative ({programs.length})</option>
               {programs.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.topic}
@@ -676,7 +676,7 @@ export default function MeetingLogsView({ logs, programs, onSubmitLog, currentUs
               onChange={(e) => setSelectedStatusFilter(e.target.value)}
               className="w-full text-xs font-semibold px-3 py-2.5 bg-slate-50/85 hover:bg-slate-50 border border-slate-250 rounded-lg transition-colors focus:ring-1 focus:ring-indigo-500 text-slate-750"
             >
-              <option value="all">Semua Target Status Baru</option>
+              <option value="all">Status Baru</option>
               <option value="Green">Green (On Track)</option>
               <option value="Yellow">Yellow (At Risk)</option>
               <option value="Red">Red (Critical)</option>

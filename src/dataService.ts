@@ -4,7 +4,8 @@ import {
   signInWithEmailAndPassword, 
   signOut, 
   updateProfile, 
-  sendEmailVerification 
+  sendEmailVerification,
+  sendPasswordResetEmail
 } from "firebase/auth";
 import { 
   collection, 
@@ -278,17 +279,6 @@ export function listenToAuth(callback: (user: UserAccount | null) => void) {
         console.warn("Gagal reload user:", e);
       }
       const activeUser = auth.currentUser || firebaseUser;
-      if (!activeUser.emailVerified) {
-        cachedUid = null;
-        cachedUser = null;
-        try {
-          await signOut(auth);
-        } catch (e) {
-          // ignore
-        }
-        callback(null);
-        return;
-      }
       cachedUid = activeUser.uid;
       const defaultDisplayName = activeUser.displayName || (activeUser.email ? activeUser.email.split('@')[0] : "User");
       const isAdmin = firebaseUser.uid === "gIbkeiOdWINKMthEN7cPFEirky22";
@@ -356,21 +346,31 @@ export async function signUpUser(
       }
     }
 
-    // Send email verification
+    // Send email verification optionally in the background
     try {
-      await sendEmailVerification(firebaseUser);
+      sendEmailVerification(firebaseUser).catch(e => console.warn("Background verification email error:", e));
     } catch (sendErr: any) {
       console.warn("Could not send verification email:", sendErr.message || sendErr);
     }
 
-    // Do NOT sign in automatically — sign out immediately
-    await signOut(auth);
-    cachedUid = null;
-    cachedUser = null;
+    const displayName = name?.trim() || firebaseUser.displayName || (firebaseUser.email ? firebaseUser.email.split('@')[0] : "User");
+    const isAdmin = firebaseUser.uid === "gIbkeiOdWINKMthEN7cPFEirky22";
+
+    const userAccount: UserAccount = {
+      email: firebaseUser.email || emailKey,
+      name: displayName,
+      role: isAdmin ? "ADMIN" : "VIEWER",
+      roleName: isAdmin ? "Admin" : "Viewer",
+      uid: firebaseUser.uid
+    };
+
+    cachedUid = userAccount.uid;
+    cachedUser = userAccount;
 
     return {
-      isUnverified: true,
-      email: firebaseUser.email || emailKey
+      userAccount,
+      isUnverified: false,
+      email: userAccount.email
     };
   } catch (err: any) {
     let errorMsg = err.message || "Gagal mendaftarkan akun. Silakan coba lagi.";
@@ -416,24 +416,7 @@ export async function loginUser(email: string, password: string): Promise<{ user
       console.warn("Could not reload user status:", reloadErr);
     }
 
-    if (!firebaseUser.emailVerified) {
-      // Send verification email again
-      try {
-        await sendEmailVerification(firebaseUser);
-      } catch (sendErr: any) {
-        console.warn("Could not send verification email on login:", sendErr.message || sendErr);
-      }
 
-      // Sign out unverified user to block access
-      await signOut(auth);
-      cachedUid = null;
-      cachedUser = null;
-
-      return {
-        isUnverified: true,
-        email: firebaseUser.email || emailKey
-      };
-    }
 
     const displayName = firebaseUser.displayName || (firebaseUser.email ? firebaseUser.email.split('@')[0] : "User");
 
@@ -483,6 +466,26 @@ export async function logoutUser(): Promise<void> {
   await signOut(auth);
   cachedUid = null;
   cachedUser = null;
+}
+
+export async function resetUserPassword(email: string): Promise<void> {
+  const emailKey = email.trim().toLowerCase();
+  if (!emailKey) throw new Error("Email tidak boleh kosong");
+  try {
+    await sendPasswordResetEmail(auth, emailKey);
+  } catch (err: any) {
+    let errorMsg = err.message || "Gagal mengirim email reset password. Silakan coba lagi.";
+    if (err.code === "auth/user-not-found" || errorMsg.includes("user-not-found")) {
+      errorMsg = "Email tidak ditemukan.";
+    } else if (err.code === "auth/invalid-email" || errorMsg.includes("invalid-email")) {
+      errorMsg = "Format email tidak valid.";
+    } else if (err.code === "auth/network-request-failed") {
+      errorMsg = "Gagal terhubung ke server. Periksa koneksi internet Anda.";
+    }
+    const errorToThrow = new Error(errorMsg);
+    (errorToThrow as any).code = err.code || "";
+    throw errorToThrow;
+  }
 }
 
 export async function initializeDatabaseIfEmpty(): Promise<boolean> {

@@ -28,6 +28,7 @@ import {
   ChevronRight,
   Info,
   Eye,
+  ListFilter,
   Download,
   File,
   AlertCircle
@@ -90,6 +91,7 @@ export default function MeetingLogModal({
   // Local active program selection
   const [selectedProgramId, setSelectedProgramId] = useState<string>("");
   const [sidebarSearch, setSidebarSearch] = useState("");
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
   // -- File Attachments and Document Links States --
   const [logFiles, setLogFiles] = useState<AttachmentFile[]>([]);
@@ -121,6 +123,18 @@ export default function MeetingLogModal({
       setActiveTab("details");
     }
   }, [program, logToEdit, isOpen]);
+
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
 
   // Find currently active program either from selected ID or fallback to prop
   const activeProgram = useMemo(() => {
@@ -299,7 +313,7 @@ export default function MeetingLogModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm p-2 sm:p-4 flex items-start sm:items-center justify-center">
+    <div className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-slate-900/60 backdrop-blur-sm p-2 sm:p-4 flex items-start sm:items-center justify-center">
       <div className="relative w-full max-w-7xl bg-white rounded-xl shadow-2xl flex flex-col border border-slate-200 animate-in fade-in zoom-in-95 duration-150 my-auto h-auto lg:h-[90vh] overflow-hidden lg:overflow-hidden">
         
         {/* Modal Top Header */}
@@ -330,122 +344,176 @@ export default function MeetingLogModal({
 
         {/* Navigation & Status Ribbon */}
         {logToEdit ? (
-          <div className="bg-slate-50 px-6 py-2.5 border-b border-slate-200 flex items-center justify-between shrink-0">
+          <div className="bg-slate-50 px-4 sm:px-6 py-2.5 border-b border-slate-200 flex items-center justify-between shrink-0">
             <span className="text-xs font-extrabold text-slate-700 font-sans tracking-tight">
               Edit Mode — Silakan perbarui detail catatan rapat dan unggahan file di bawah.
             </span>
           </div>
         ) : (
-          <div className="bg-slate-50 px-6 py-2.5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 shrink-0">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setActiveTab("details")}
-                className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
-                  activeTab === "details"
-                    ? "bg-white text-indigo-750 shadow-sm border border-slate-250"
-                    : "text-slate-550 hover:bg-white hover:text-slate-800"
-                }`}
-              >
-                <FileText className="w-4 h-4 text-indigo-650" />
-                Detail Program Tracker
-              </button>
-              {isOwner && (
+          <div className="bg-slate-50 px-3.5 sm:px-6 py-2.5 border-b border-slate-200 flex flex-col gap-2 shrink-0">
+            {/* Top Row: Main Tabs & Status Indicators */}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              {/* Action Tabs */}
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <button
-                  onClick={() => setActiveTab("add_mom")}
-                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
-                    activeTab === "add_mom"
-                      ? "bg-indigo-600 text-white shadow-md hover:bg-indigo-700"
+                  onClick={() => setActiveTab("details")}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+                    activeTab === "details"
+                      ? "bg-white text-indigo-750 shadow-sm border border-slate-250"
                       : "text-slate-550 hover:bg-white hover:text-slate-800"
                   }`}
                 >
-                  <FileEdit className="w-4 h-4" />
-                  Update Progress & Buat MoM
+                  <FileText className="w-3.5 h-3.5 text-indigo-650 shrink-0" />
+                  <span>Detail Program</span>
                 </button>
-              )}
+                {isOwner && (
+                  <button
+                    onClick={() => setActiveTab("add_mom")}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+                      activeTab === "add_mom"
+                        ? "bg-indigo-600 text-white shadow-md hover:bg-indigo-700"
+                        : "text-slate-550 hover:bg-white hover:text-slate-800"
+                    }`}
+                  >
+                    <FileEdit className="w-3.5 h-3.5 shrink-0" />
+                    <span>Update Progress & MoM</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Status & Progress Indicators */}
+              <div className="flex items-center gap-2">
+                <span className={`px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide border rounded-md shrink-0 ${getStatusLabelColor(activeProgram.statusTracker)}`}>
+                  Status: {activeProgram.statusTracker}
+                </span>
+                <span className="px-2 py-1 text-[10px] bg-slate-200 text-slate-750 font-extrabold font-mono rounded shrink-0">
+                  {activeProgram.progress}% Completed
+                </span>
+              </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <span className={`px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide border rounded-md ${getStatusLabelColor(activeProgram.statusTracker)}`}>
-                Status: {activeProgram.statusTracker}
-              </span>
-              <span className="px-2.5 py-1 text-[10px] bg-slate-200 text-slate-750 font-extrabold font-mono rounded">
-                {activeProgram.progress}% Completed
-              </span>
-            </div>
+            {/* Bottom Row (Mobile & Tablet Only): Dedicated Full-Width Initiative Selector Button */}
+            {!logToEdit && (
+              <div className="lg:hidden w-full pt-1">
+                <button
+                  type="button"
+                  onClick={() => setIsMobileDrawerOpen(true)}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-extrabold text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/90 rounded-lg transition-all cursor-pointer shadow-2xs active:scale-[0.99]"
+                >
+                  <ListFilter className="w-4 h-4 text-indigo-600 shrink-0" />
+                  <span>📋 List Inisiatif Program ({filteredPrograms.length})</span>
+                </button>
+              </div>
+            )}
           </div>
         )}
 
         {/* Screen Tri-Split Layout */}
-        <div className="flex flex-col lg:flex-row flex-1 overflow-visible lg:overflow-hidden min-h-0 bg-slate-50/20">
+        <div className="flex flex-col lg:flex-row flex-1 overflow-visible lg:overflow-hidden min-h-0 bg-slate-50/20 relative">
           
-          {/* PANAL 1 (INNER LEFT): Sidebar selector of ALL program trackers */}
+          {/* PANEL 1 (INNER LEFT): Sidebar selector of ALL program trackers */}
           {!logToEdit && (
-            <div className="w-full lg:w-72 bg-slate-50 border-b lg:border-b-0 lg:border-r border-slate-200 flex flex-col shrink-0 h-[180px] lg:h-auto">
-              <div className="p-3 border-b border-slate-200 bg-white shrink-0">
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
-                  <input
-                    type="text"
-                    placeholder="Cari inisiatif..."
-                    value={sidebarSearch}
-                    onChange={(e) => setSidebarSearch(e.target.value)}
-                    className="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-2 outline-none focus:ring-1 focus:ring-indigo-500 font-medium text-slate-850"
-                  />
-                </div>
-                <div className="mt-1.5 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                  <span>Inisiatif Program ({filteredPrograms.length})</span>
-                </div>
-              </div>
+            <>
+              {/* Mobile & Tablet Dimmed Overlay Backdrop */}
+              {isMobileDrawerOpen && (
+                <div 
+                  onClick={() => setIsMobileDrawerOpen(false)}
+                  className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-2xs transition-opacity animate-in fade-in duration-200"
+                />
+              )}
 
-              <div className="flex-1 overflow-y-auto divide-y divide-slate-150 p-2 space-y-1 bg-slate-50/40">
-                {filteredPrograms.map((p) => {
-                  const isActive = p.id === activeProgram.id;
-                  return (
+              {/* Sidebar / Off-Canvas Motion Drawer Container */}
+              <div 
+                className={`
+                  fixed inset-y-0 left-0 z-50 w-[85%] max-w-xs bg-slate-50 border-r border-slate-200 flex flex-col shrink-0 shadow-2xl transition-transform duration-300 ease-in-out
+                  ${isMobileDrawerOpen ? "translate-x-0" : "-translate-x-full"}
+                  lg:static lg:z-auto lg:w-72 lg:max-w-none lg:shadow-none lg:translate-x-0 lg:flex lg:h-auto
+                `}
+              >
+                {/* Header with Search & Mobile Close (✕) Button */}
+                <div className="p-3 border-b border-slate-200 bg-white shrink-0">
+                  <div className="flex items-center justify-between gap-2 mb-2 lg:hidden">
+                    <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-800">
+                      <ListFilter className="w-4 h-4 text-indigo-600 shrink-0" />
+                      <span>Daftar Inisiatif Program</span>
+                    </div>
                     <button
-                      key={p.id}
-                      onClick={() => {
-                        setSelectedProgramId(p.id);
-                      }}
-                      className={`w-full text-left p-3 rounded-lg border transition-all flex flex-col gap-1.5 cursor-pointer ${
-                        isActive 
-                          ? "bg-white border-indigo-400 shadow-md ring-1 ring-indigo-500/20" 
-                          : "bg-white/80 hover:bg-white border-slate-200 hover:border-slate-300"
-                      }`}
+                      type="button"
+                      onClick={() => setIsMobileDrawerOpen(false)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                      title="Tutup"
                     >
-                      <div className="flex items-center justify-between gap-1 w-full">
-                        <span className="font-mono text-[9px] bg-slate-100 text-slate-650 font-bold px-1.5 py-0.5 rounded shrink-0">
-                          No. {p.no || "-"}
-                        </span>
-                        <span className={`text-[8px] font-black uppercase px-1.5 py-0.2 rounded border ${
-                          p.priority === "Critical" ? "bg-rose-50 text-rose-700 border-rose-200" :
-                          p.priority === "High" ? "bg-orange-50 text-orange-750 border-orange-200" :
-                          p.priority === "Medium" ? "bg-amber-50 text-amber-750 border-amber-250" :
-                          "bg-slate-50 text-slate-600 border-slate-200"
-                        }`}>
-                          {p.priority === "Critical" ? "P1 (Crit)" :
-                           p.priority === "High" ? "P2 (High)" :
-                           p.priority === "Medium" ? "P3 (Med)" : "P4 (Low)"}
-                        </span>
-                      </div>
-
-                      <p className={`text-xs font-bold leading-tight ${isActive ? "text-indigo-950 font-extrabold" : "text-slate-800"}`}>
-                        {p.topic}
-                      </p>
-
-                      <div className="flex items-center justify-between text-[9px] text-slate-500 mt-1 border-t border-slate-100 pt-1 w-full">
-                        <span className="font-medium truncate max-w-[110px]">{p.owner || "No owner"}</span>
-                        <span className="font-bold text-slate-700 font-mono">{p.progress}%</span>
-                      </div>
+                      <X className="w-4 h-4" />
                     </button>
-                  );
-                })}
-                {filteredPrograms.length === 0 && (
-                  <div className="text-center py-8 text-xs text-slate-400 font-mono italic">
-                    Tidak ditemukan inisiatif.
                   </div>
-                )}
+
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Cari inisiatif..."
+                      value={sidebarSearch}
+                      onChange={(e) => setSidebarSearch(e.target.value)}
+                      className="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-2 outline-none focus:ring-1 focus:ring-indigo-500 font-medium text-slate-850"
+                    />
+                  </div>
+                  <div className="mt-1.5 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span>Inisiatif Program ({filteredPrograms.length})</span>
+                  </div>
+                </div>
+
+                {/* List of Programs */}
+                <div className="flex-1 overflow-y-auto divide-y divide-slate-150 p-2 space-y-1 bg-slate-50/40">
+                  {filteredPrograms.map((p) => {
+                    const isActive = p.id === activeProgram.id;
+                    return (
+                      <button
+                        key={p.id}
+                        onClick={() => {
+                          setSelectedProgramId(p.id);
+                          setIsMobileDrawerOpen(false); // Close drawer on selection for mobile
+                        }}
+                        className={`w-full text-left p-3 rounded-lg border transition-all flex flex-col gap-1.5 cursor-pointer ${
+                          isActive 
+                            ? "bg-white border-indigo-400 shadow-md ring-1 ring-indigo-500/20" 
+                            : "bg-white/80 hover:bg-white border-slate-200 hover:border-slate-300"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-1 w-full">
+                          <span className="font-mono text-[9px] bg-slate-100 text-slate-650 font-bold px-1.5 py-0.5 rounded shrink-0">
+                            No. {p.no || "-"}
+                          </span>
+                          <span className={`text-[8px] font-black uppercase px-1.5 py-0.2 rounded border ${
+                            p.priority === "Critical" ? "bg-rose-50 text-rose-700 border-rose-200" :
+                            p.priority === "High" ? "bg-orange-50 text-orange-750 border-orange-200" :
+                            p.priority === "Medium" ? "bg-amber-50 text-amber-750 border-amber-250" :
+                            "bg-slate-50 text-slate-600 border-slate-200"
+                          }`}>
+                            {p.priority === "Critical" ? "P1 (Crit)" :
+                             p.priority === "High" ? "P2 (High)" :
+                             p.priority === "Medium" ? "P3 (Med)" : "P4 (Low)"}
+                          </span>
+                        </div>
+
+                        <p className={`text-xs font-bold leading-tight ${isActive ? "text-indigo-950 font-extrabold" : "text-slate-800"}`}>
+                          {p.topic}
+                        </p>
+
+                        <div className="flex items-center justify-between text-[9px] text-slate-500 mt-1 border-t border-slate-100 pt-1 w-full">
+                          <span className="font-medium truncate max-w-[110px]">{p.owner || "No owner"}</span>
+                          <span className="font-bold text-slate-700 font-mono">{p.progress}%</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                  {filteredPrograms.length === 0 && (
+                    <div className="text-center py-8 text-xs text-slate-400 font-mono italic">
+                      Tidak ditemukan inisiatif.
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            </>
           )}
 
           {/* PANEL 2 (INNER CENTER): Displays activeTab content */}

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { ProgramJob, MeetingLog, UserAccount } from "../types";
 import { 
   ResponsiveContainer, 
@@ -17,10 +17,16 @@ import {
   TrendingUp, 
   Activity, 
   AlertTriangle, 
+  AlertCircle,
   Flame, 
   Lock, 
   CheckCircle2,
-  X
+  X,
+  ListTodo,
+  Sun,
+  Sunset,
+  Moon,
+  Sparkles
 } from "lucide-react";
 
 interface DashboardViewProps {
@@ -43,6 +49,57 @@ export default function DashboardView({
   const [selectedCell, setSelectedCell] = useState<{ probability: number; impact: number } | null>(null);
   const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
   const [onlyMyPrograms, setOnlyMyPrograms] = useState(false);
+
+  // Dynamic greeting based on user's local time
+  const greetingData = useMemo(() => {
+    const now = new Date();
+    const hours = now.getHours();
+
+    if (hours >= 0 && hours < 12) {
+      return {
+        greeting: "Good Morning",
+        subtext: "Selamat pagi! Siap memantau progres inisiatif strategis KAI hari ini?",
+        icon: Sun,
+        iconColor: "text-amber-300 fill-amber-300/30",
+        bgGradient: "from-[#1e266f] via-[#28338e] to-[#f36e21]",
+        badgeText: "MORNING COCKPIT BRIEF"
+      };
+    } else if (hours >= 12 && hours < 18) {
+      return {
+        greeting: "Good Afternoon",
+        subtext: "Selamat sore! Mari tinjau capaian dan kendala program kerja siang ini.",
+        icon: Sunset,
+        iconColor: "text-orange-300 fill-orange-300/30",
+        bgGradient: "from-[#1e266f] via-[#323f9e] to-[#e65c00]",
+        badgeText: "AFTERNOON COCKPIT BRIEF"
+      };
+    } else {
+      return {
+        greeting: "Good Evening",
+        subtext: "Selamat malam! Pantau ringkasan akhir hari dan eskalasi risiko dengan cepat.",
+        icon: Moon,
+        iconColor: "text-amber-200 fill-amber-200/30",
+        bgGradient: "from-[#131a4e] via-[#1e266f] to-[#40206e]",
+        badgeText: "EVENING COCKPIT BRIEF"
+      };
+    }
+  }, []);
+
+  const getUserDisplayName = () => {
+    if (currentUser?.name && currentUser.name.trim() !== "") {
+      return currentUser.name;
+    }
+    if ((currentUser as any)?.displayName && (currentUser as any).displayName.trim() !== "") {
+      return (currentUser as any).displayName;
+    }
+    if (currentUser?.email) {
+      const rawName = currentUser.email.split("@")[0];
+      return rawName.charAt(0).toUpperCase() + rawName.slice(1);
+    }
+    return "User";
+  };
+
+  const GreetingIcon = greetingData.icon;
 
   // Dynamically shadow rawPrograms if "Only My Programs" filter is toggled by a PROGRAM_OWNER
   const programs = useMemo(() => {
@@ -181,15 +238,20 @@ export default function DashboardView({
   };
 
   const handleMetricCardClick = (metricName: string) => {
-    setSelectedMetric(prev => prev === metricName ? null : metricName);
-    // Auto-scroll to selected metric table for smooth UX
-    setTimeout(() => {
-      const element = document.getElementById("selected-category-section");
-      if (element) {
-        element.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      }
-    }, 100);
+    setSelectedMetric(metricName);
   };
+
+  // Lock body scroll when selectedMetric modal is open
+  useEffect(() => {
+    if (selectedMetric) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [selectedMetric]);
 
   
   // 1. Core Summary Metrics
@@ -290,6 +352,42 @@ export default function DashboardView({
 
   return (
     <div className="space-y-6">
+
+      {/* 0. Welcome / Personal Greeting Banner */}
+      <div className={`relative overflow-hidden rounded-xl bg-gradient-to-r ${greetingData.bgGradient} px-3.5 py-2.5 sm:px-5 sm:py-3.5 text-white shadow-md border border-white/15`}>
+        {/* Decorative Ambient Background Shapes */}
+        <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-white/10 blur-xl pointer-events-none" />
+        <div className="absolute -bottom-8 right-24 h-24 w-24 rounded-full bg-[#f36e21]/25 blur-lg pointer-events-none" />
+
+        <div className="relative z-10 flex items-center justify-between gap-3">
+          <div className="space-y-0.5 sm:space-y-1 min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2 sm:px-2.5 py-0.5 text-[8px] sm:text-[9px] font-mono font-bold uppercase tracking-wider text-white backdrop-blur-md border border-white/20 shrink-0">
+                <Sparkles className="h-2.5 w-2.5 text-amber-300 animate-pulse" />
+                {greetingData.badgeText}
+              </span>
+              <span className="text-[8.5px] sm:text-[10px] font-mono text-white/75 truncate">
+                • {new Date().toLocaleDateString("id-ID", { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+              </span>
+            </div>
+
+            <h1 className="text-sm sm:text-base md:text-lg font-black tracking-tight text-white leading-tight truncate">
+              {greetingData.greeting}, <span className="text-amber-300">{getUserDisplayName()}</span>! 👋
+            </h1>
+
+            <p className="text-[10px] sm:text-xs text-white/85 font-medium leading-tight max-w-xl truncate hidden xs:block">
+              {greetingData.subtext}
+            </p>
+          </div>
+
+          {/* Right Icon Illustration Badge */}
+          <div className="shrink-0 flex items-center">
+            <div className="flex h-8 w-8 sm:h-11 sm:w-11 items-center justify-center rounded-lg sm:rounded-xl bg-white/15 backdrop-blur-md border border-white/20 shadow-inner">
+              <GreetingIcon className={`h-4 w-4 sm:h-6 sm:w-6 ${greetingData.iconColor} drop-shadow-sm`} />
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Standalone Filter for Users with Designated Cluster */}
       {currentUser && currentUser.ownerName && (
@@ -428,7 +526,7 @@ export default function DashboardView({
           ) : (
             <>
               {/* Desktop Table View */}
-              <div className="hidden md:block">
+              <div className="hidden lg:block">
                 <table className="w-full text-left text-xs font-sans min-w-[800px]">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200 font-mono text-slate-500 font-bold">
@@ -485,15 +583,15 @@ export default function DashboardView({
               </div>
 
               {/* Mobile Card List View */}
-              <div className="grid grid-cols-1 gap-4 md:hidden pb-2">
-                {topIssues.map((issue) => {
+              <div className="flex flex-col lg:hidden gap-4 max-h-[580px] overflow-y-auto snap-y pr-1 pb-3 scrollbar-thin">
+                {topIssues.map((issue, index) => {
                   const isCritical = issue.priority === "Critical";
                   const isHigh = issue.priority === "High";
                   const isMedium = issue.priority === "Medium";
                   const priorityBg = 
-                    isCritical ? "bg-red-50 text-red-700 border-red-200" : 
-                    isHigh ? "bg-orange-50 text-orange-700 border-orange-200" :
-                    isMedium ? "bg-blue-50 text-blue-700 border-blue-200" :
+                    isCritical ? "bg-rose-50 text-rose-700 border-rose-200" : 
+                    isHigh ? "bg-amber-50 text-amber-700 border-amber-200" :
+                    isMedium ? "bg-sky-50 text-sky-700 border-sky-200" :
                     "bg-slate-50 text-slate-500 border-slate-200";
                   const priorityLabel = 
                     issue.priority === "Critical" ? "P1 (Critical)" :
@@ -505,63 +603,116 @@ export default function DashboardView({
                     <div 
                       key={issue.id}
                       onClick={() => (onUpdateProgressClick || onEditProgramClick)?.(issue)}
-                      className="bg-white border border-slate-200 hover:border-slate-300 rounded-xl p-4 shadow-3xs hover:shadow-2xs transition-all active:scale-[0.98] cursor-pointer flex flex-col gap-3"
+                      className={`w-full bg-white border rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all active:scale-[0.99] cursor-pointer flex flex-col snap-start shrink-0 ${
+                        isCritical ? "border-l-4 border-l-rose-500 border-slate-200" :
+                        isHigh ? "border-l-4 border-l-amber-500 border-slate-200" :
+                        isMedium ? "border-l-4 border-l-sky-500 border-slate-200" :
+                        "border-l-4 border-l-slate-400 border-slate-200"
+                      }`}
                     >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${priorityBg}`}>
-                          {priorityLabel}
-                        </span>
-                        <span className="text-[10px] font-mono font-bold text-slate-400">
-                          Deadline: <strong className="text-slate-700">{issue.deadline || "-"}</strong>
-                        </span>
+                      {/* Card Header: Program Counter, Cluster, Priority & Target */}
+                      <div className="p-3.5 bg-slate-50/90 border-b border-slate-100 flex flex-col gap-2">
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[9.5px] font-black text-indigo-900 bg-indigo-100/90 border border-indigo-200/80 px-2 py-0.5 rounded-md font-mono">
+                              Program #{index + 1} dari {topIssues.length}
+                            </span>
+                            <span className="text-[9px] font-extrabold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md uppercase tracking-wider">
+                              {issue.cluster}
+                            </span>
+                          </div>
+                          <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded border shadow-2xs ${priorityBg}`}>
+                            {priorityLabel}
+                          </span>
+                        </div>
+
+                        {/* Inisiatif Program Name */}
+                        <div className="space-y-0.5 mt-0.5">
+                          <span className="text-[8.5px] font-black text-slate-400 uppercase tracking-wider block">
+                            INISIATIF PROGRAM:
+                          </span>
+                          <h4 className="text-sm font-extrabold text-[#1e266f] leading-snug tracking-tight">
+                            {issue.topic}
+                          </h4>
+                        </div>
+
+                        {/* Progress Bar & Target Date */}
+                        <div className="flex items-center justify-between gap-3 pt-1 border-t border-slate-100/80 mt-1">
+                          <div className="flex items-center gap-1.5 text-[10px] font-mono text-slate-500">
+                            <span>Target:</span>
+                            <strong className="text-slate-800 font-bold">{issue.deadline || "-"}</strong>
+                          </div>
+
+                          {typeof issue.progress === "number" && (
+                            <div className="flex items-center gap-2 min-w-[100px]">
+                              <div className="flex-1 bg-slate-200/70 rounded-full h-1.5 overflow-hidden">
+                                <div 
+                                  className={`h-full rounded-full transition-all duration-300 ${
+                                    issue.progress >= 80 ? "bg-emerald-500" :
+                                    issue.progress >= 50 ? "bg-amber-500" : "bg-rose-500"
+                                  }`}
+                                  style={{ width: `${Math.min(100, Math.max(0, issue.progress))}%` }}
+                                />
+                              </div>
+                              <span className="text-[10px] font-mono font-extrabold text-slate-700 shrink-0">
+                                {issue.progress}%
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
-                      <div className="space-y-1">
-                        <h4 className="text-xs font-bold text-[#1e266f] leading-snug">
-                          {issue.topic}
-                        </h4>
-                        <span className="inline-block text-[9px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-100/50 px-2 py-0.5 rounded uppercase tracking-wider">
-                          {issue.cluster}
-                        </span>
-                      </div>
-
-                      <div className="space-y-2.5 pt-1.5 border-t border-slate-100 text-[11px] text-slate-600">
+                      {/* Card Body Details - All Columns Displayed */}
+                      <div className="p-3.5 space-y-3 text-xs text-slate-600">
+                        {/* 1. Isu Utama & Tantangan */}
                         <div>
-                          <span className="block text-[8.5px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Isu Utama</span>
-                          <p className="bg-slate-50 p-2.5 rounded border border-slate-100 font-medium text-slate-700 leading-relaxed">
-                            {issue.keyIssue || "N/A"}
+                          <span className="block text-[9px] font-extrabold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1">
+                            <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0" />
+                            Isu Utama & Tantangan
+                          </span>
+                          <p className="bg-slate-50/90 p-2.5 rounded-lg border border-slate-200/80 font-medium text-slate-800 leading-relaxed text-xs">
+                            {issue.keyIssue || "Tidak ada isu khusus"}
                           </p>
                         </div>
 
-                        {issue.strategicImpact && (
-                          <div>
-                            <span className="block text-[8.5px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Dampak Strategis</span>
-                            <p className="text-slate-600 leading-relaxed font-normal">
-                              {issue.strategicImpact}
-                            </p>
-                          </div>
-                        )}
-
+                        {/* 2. Dampak Strategis */}
                         <div>
-                          <span className="block text-[8.5px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Rekomendasi ZT</span>
-                          <p className="bg-indigo-50/20 text-indigo-950 p-2.5 rounded border border-indigo-100/50 font-medium leading-relaxed">
-                            {issue.actionPlan || "N/A"}
+                          <span className="block text-[9px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">
+                            Dampak Strategis
+                          </span>
+                          <p className="bg-slate-50/50 p-2 rounded-lg border border-slate-100 text-slate-700 leading-relaxed text-[11px] font-normal">
+                            {issue.strategicImpact || "Tidak dicantumkan"}
                           </p>
                         </div>
 
-                        {issue.clearThePath && (
-                          <div className="bg-rose-50/20 border border-rose-100/50 p-2.5 rounded">
-                            <span className="block text-[8.5px] font-bold text-rose-600 uppercase tracking-wider mb-0.5">Clear the Path (DZ Decision Needed)</span>
-                            <p className="font-bold text-slate-850 leading-relaxed text-slate-900">
-                              {issue.clearThePath}
-                            </p>
-                          </div>
-                        )}
+                        {/* 3. Rekomendasi ZT / Action Plan */}
+                        <div>
+                          <span className="block text-[9px] font-extrabold text-indigo-700 uppercase tracking-wider mb-1">
+                            Rekomendasi ZT (Action Plan)
+                          </span>
+                          <p className="bg-indigo-50/40 text-indigo-950 p-2.5 rounded-lg border border-indigo-150/80 font-medium leading-relaxed text-xs">
+                            {issue.actionPlan || "-"}
+                          </p>
+                        </div>
+
+                        {/* 4. Clear the Path / Keputusan DZ Needed */}
+                        <div className="bg-rose-50/70 border border-rose-200 p-2.5 rounded-lg shadow-2xs">
+                          <span className="block text-[9px] font-extrabold text-rose-700 uppercase tracking-wider mb-1 flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3 text-rose-600 shrink-0" />
+                            Clear the Path (Keputusan DZ)
+                          </span>
+                          <p className="font-bold text-slate-900 leading-relaxed text-xs">
+                            {issue.clearThePath || "Belum ada keputusan khusus"}
+                          </p>
+                        </div>
                       </div>
 
-                      <div className="pt-2.5 border-t border-slate-150 flex items-center justify-between text-[10px] text-slate-400 font-mono">
-                        <span>Owner: <strong className="text-slate-600">{issue.owner}</strong></span>
-                        <span className="text-indigo-600 font-bold hover:underline">Ketuk untuk Detail &rarr;</span>
+                      {/* Card Footer: Owner & Detail Link */}
+                      <div className="px-3.5 py-2.5 bg-slate-50/90 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                        <span>Penanggung Jawab: <strong className="text-slate-800 font-bold">{issue.owner || "-"}</strong></span>
+                        <span className="text-indigo-600 font-extrabold hover:underline flex items-center gap-0.5">
+                          Klik Detail &rarr;
+                        </span>
                       </div>
                     </div>
                   );
@@ -685,148 +836,232 @@ export default function DashboardView({
         </div>
       )}
 
-      {/* Selected Metric Details Table */}
+      {/* Selected Metric Details Pop-up Modal Overlay */}
       {selectedMetric && (
-        <div id="selected-category-section" className="bg-white rounded-xl border border-indigo-200/85 p-4 sm:p-5 shadow-sm transition-all duration-300 animate-in fade-in-50 duration-200">
-          <div className="flex items-center justify-between border-b border-indigo-100 pb-3 mb-4">
-            <div className="flex items-center gap-2.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-pulse"></span>
-              <div>
-                <h3 className="text-xs font-bold font-sans text-indigo-950 uppercase tracking-wider">
-                  {getMetricLabel(selectedMetric)}
-                </h3>
-                <p className="text-[10px] text-slate-400 font-mono mt-0.5">
-                  Ditemukan {selectedMetricPrograms.length} program pada kategori ini (Klik baris untuk Detail Lengkap)
-                </p>
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-5 bg-slate-900/60 backdrop-blur-xs overscroll-contain overflow-y-auto animate-in fade-in duration-200"
+          onClick={() => setSelectedMetric(null)}
+        >
+          <div 
+            className="bg-white rounded-2xl border border-slate-200 w-full max-w-5xl max-h-[85vh] sm:max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 font-sans my-auto shrink-0"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="bg-[#1e266f] border-b-2 border-[#f36e21] px-4 sm:px-6 py-3.5 text-white flex items-center justify-between shrink-0 shadow-sm">
+              <div className="flex items-center gap-3 min-w-0 pr-2">
+                <div className="p-2 bg-[#f36e21] text-white rounded-xl shrink-0 shadow-2xs">
+                  <ListTodo className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-xs sm:text-sm font-black tracking-tight text-white uppercase truncate">
+                      {getMetricLabel(selectedMetric)}
+                    </h3>
+                    <span className="px-2.5 py-0.5 rounded-full bg-[#f36e21] text-white text-[10px] font-black font-mono shrink-0 shadow-2xs">
+                      {selectedMetricPrograms.length} Inisiatif
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-orange-100/90 font-medium truncate mt-0.5">
+                    Klik pada baris atau kartu program untuk membuka detail lengkap dan update MoM
+                  </p>
+                </div>
               </div>
-            </div>
-            <button 
-              onClick={() => setSelectedMetric(null)}
-              className="p-1.5 hover:bg-slate-100 rounded-full transition-colors cursor-pointer text-slate-400 hover:text-slate-600"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
 
-          {selectedMetricPrograms.length === 0 ? (
-            <div className="text-center py-8 text-slate-400 text-xs font-mono">
-              Tidak ada program yang berada di kategori ini.
+              <button 
+                type="button"
+                onClick={() => setSelectedMetric(null)}
+                className="p-1.5 hover:bg-white/20 text-white/80 hover:text-white rounded-lg transition-colors cursor-pointer shrink-0"
+                title="Tutup Modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs font-sans min-w-[850px]">
-                <thead>
-                  <tr className="bg-indigo-50/50 border-b border-indigo-100 font-mono text-indigo-900/80 font-bold">
-                    <th className="py-2.5 px-3 w-12 text-center">No</th>
-                    <th className="py-2.5 px-3 bg-indigo-50/50 text-indigo-900 font-bold border-r border-indigo-100/30">Topic</th>
-                    <th className="py-2.5 px-3">Cluster</th>
-                    <th className="py-2.5 px-3">Unit Owner</th>
-                    <th className="py-2.5 px-3">Phase</th>
-                    
-                    {/* Dynamic Headers based on selected metric */}
-                    {selectedMetric === "decisionPending" ? (
-                      <>
-                        <th className="py-2.5 px-3 text-center">Decision Needed</th>
-                        <th className="py-2.5 px-3">Key Issue & Decision Required</th>
-                        <th className="py-2.5 px-3">Action Plan / Recommendation</th>
-                      </>
-                    ) : (
-                      <>
-                        <th className="py-2.5 px-3 text-center">Progress</th>
-                        <th className="py-2.5 px-3 text-center">Status Tracker</th>
-                        <th className="py-2.5 px-3 text-center">Risk Level</th>
-                      </>
-                    )}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {selectedMetricPrograms.map((item, index) => {
-                    return (
-                      <tr 
-                        key={item.id} 
-                        onClick={() => (onUpdateProgressClick || onEditProgramClick)?.(item)}
-                        className="hover:bg-slate-50 transition-colors cursor-pointer"
-                        title="Klik untuk melihat detail lengkap program"
-                      >
-                        <td className="py-3 px-3 text-center font-mono text-slate-500 font-medium">{index + 1}</td>
-                        <td className="py-3 px-3 font-bold text-[#1e266f] bg-indigo-50/30 border-r border-indigo-100/30">{item.topic}</td>
-                        <td className="py-3 px-3 text-slate-600 font-medium">{item.cluster}</td>
-                        <td className="py-3 px-3 text-slate-500">{item.owner}</td>
-                        <td className="py-3 px-3">
-                          <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-medium border border-slate-200/50">
-                            {item.phase}
-                          </span>
-                        </td>
 
-                        {/* Dynamic Body Cells */}
-                        {selectedMetric === "decisionPending" ? (
-                          <>
-                            <td className="py-3 px-3 text-center">
-                              <span className="px-2 py-0.5 rounded bg-red-55 bg-red-100 text-red-700 font-bold text-[10px]">
-                                {item.decisionNeeded || "Yes"}
-                              </span>
-                            </td>
-                            <td className="py-3 px-3 text-slate-700 font-medium max-w-[200px] truncate" title={item.keyIssue}>
-                              {item.keyIssue || "-"}
-                            </td>
-                            <td className="py-3 px-3 text-slate-600 max-w-[200px] truncate" title={item.actionPlan}>
-                              {item.actionPlan || "-"}
-                            </td>
-                          </>
-                        ) : (
-                          <>
-                            <td className="py-3 px-3">
-                              <div className="flex items-center justify-center gap-2">
-                                <div className="w-16 bg-slate-200 rounded-full h-1.5 hidden md:block">
-                                  <div className="bg-[#1e266f] h-1.5 rounded-full" style={{ width: `${item.progress}%` }}></div>
-                                </div>
-                                <span className="font-mono text-[10px] font-bold text-slate-700">
-                                  {item.progress}%
+            {/* Modal Body Content */}
+            <div className="p-3.5 sm:p-5 overflow-y-auto min-h-0 flex-1 space-y-3 bg-slate-50/50 overscroll-contain touch-pan-y">
+              {selectedMetricPrograms.length === 0 ? (
+                <div className="text-center py-12 text-slate-400 text-xs font-mono bg-white rounded-xl border border-slate-200/80 p-6">
+                  Tidak ada program yang berada di kategori ini.
+                </div>
+              ) : (
+                <>
+                  {/* Desktop Table View (>= md) */}
+                  <div className="hidden md:block overflow-x-auto border border-slate-200 rounded-xl bg-white shadow-2xs">
+                    <table className="w-full text-left text-xs font-sans">
+                      <thead>
+                        <tr className="bg-[#1e266f]/10 border-b border-[#1e266f]/20 font-mono text-[#1e266f] font-bold">
+                          <th className="py-2.5 px-3 w-12 text-center">No</th>
+                          <th className="py-2.5 px-3 bg-[#1e266f]/15 text-[#1e266f] font-extrabold border-r border-[#1e266f]/20">Topic Inisiatif</th>
+                          <th className="py-2.5 px-3">Cluster</th>
+                          <th className="py-2.5 px-3">Unit Owner</th>
+                          <th className="py-2.5 px-3">Phase</th>
+                          
+                          {/* Dynamic Headers based on selected metric */}
+                          {selectedMetric === "decisionPending" ? (
+                            <>
+                              <th className="py-2.5 px-3 text-center">Decision Needed</th>
+                              <th className="py-2.5 px-3">Key Issue & Decision Required</th>
+                              <th className="py-2.5 px-3">Action Plan / Recommendation</th>
+                            </>
+                          ) : (
+                            <>
+                              <th className="py-2.5 px-3 text-center">Progress</th>
+                              <th className="py-2.5 px-3 text-center">Status Tracker</th>
+                              <th className="py-2.5 px-3 text-center">Priority</th>
+                            </>
+                          )}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {selectedMetricPrograms.map((item, index) => {
+                          return (
+                            <tr 
+                              key={item.id} 
+                              onClick={() => {
+                                setSelectedMetric(null);
+                                (onUpdateProgressClick || onEditProgramClick)?.(item);
+                              }}
+                              className="hover:bg-orange-50/50 transition-colors cursor-pointer group"
+                              title="Klik untuk membuka detail lengkap program"
+                            >
+                              <td className="py-3 px-3 text-center font-mono text-slate-500 font-medium">{index + 1}</td>
+                              <td className="py-3 px-3 font-extrabold text-[#1e266f] bg-orange-50/30 border-r border-orange-100 group-hover:text-[#f36e21]">
+                                {item.topic}
+                              </td>
+                              <td className="py-3 px-3 text-slate-600 font-medium">{item.cluster}</td>
+                              <td className="py-3 px-3 text-slate-500">{item.owner}</td>
+                              <td className="py-3 px-3">
+                                <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-bold border border-slate-200/60">
+                                  {item.phase}
                                 </span>
-                              </div>
-                            </td>
-                            <td className="py-3 px-3 text-center">
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold inline-block`}
-                                style={{
-                                  backgroundColor: item.statusTracker === "Green" ? "#ecfdf5" : item.statusTracker === "Yellow" ? "#fffbeb" : item.statusTracker === "Red" ? "#fef2f2" : "#f1f5f9",
-                                  color: item.statusTracker === "Green" ? "#047857" : item.statusTracker === "Yellow" ? "#b45309" : item.statusTracker === "Red" ? "#b91c1c" : "#475569"
-                                }}
-                              >
-                                {item.statusTracker}
-                              </span>
-                            </td>
-                            <td className="py-3 px-3 text-center">
-                              <span className={`px-2 py-1 rounded text-[10px] font-bold inline-block border`}
-                                style={{
-                                  backgroundColor: 
-                                    item.priority === "Critical" ? "#fef2f2" : 
-                                    item.priority === "High" ? "#fff7ed" : 
-                                    item.priority === "Medium" ? "#eff6ff" : "#f8fafc",
-                                  color: 
-                                    item.priority === "Critical" ? "#b91c1c" : 
-                                    item.priority === "High" ? "#c2410c" : 
-                                    item.priority === "Medium" ? "#1d4ed8" : "#475569",
-                                  borderColor: 
-                                    item.priority === "Critical" ? "#fecaca" : 
-                                    item.priority === "High" ? "#fed7aa" : 
-                                    item.priority === "Medium" ? "#bfdbfe" : "#e2e8f0"
-                                }}
-                              >
-                                {item.priority === "Critical" ? "P1 (Critical)" : 
-                                 item.priority === "High" ? "P2 (High)" : 
-                                 item.priority === "Medium" ? "P3 (Medium)" : 
-                                 item.priority === "Low" ? "P4 (Low)" : (item.priority || "P3 (Medium)")}
-                              </span>
-                            </td>
-                          </>
-                        )}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                              </td>
+
+                              {/* Dynamic Body Cells */}
+                              {selectedMetric === "decisionPending" ? (
+                                <>
+                                  <td className="py-3 px-3 text-center">
+                                    <span className="px-2 py-0.5 rounded bg-red-100 text-red-700 font-bold text-[10px]">
+                                      {item.decisionNeeded || "Yes"}
+                                    </span>
+                                  </td>
+                                  <td className="py-3 px-3 text-slate-700 font-medium max-w-[200px] truncate" title={item.keyIssue}>
+                                    {item.keyIssue || "-"}
+                                  </td>
+                                  <td className="py-3 px-3 text-slate-600 max-w-[200px] truncate" title={item.actionPlan}>
+                                    {item.actionPlan || "-"}
+                                  </td>
+                                </>
+                              ) : (
+                                <>
+                                  <td className="py-3 px-3">
+                                    <div className="flex items-center justify-center gap-2">
+                                      <div className="w-16 bg-slate-200 rounded-full h-1.5 hidden md:block">
+                                        <div className="bg-[#f36e21] h-1.5 rounded-full" style={{ width: `${item.progress}%` }}></div>
+                                      </div>
+                                      <span className="font-mono text-[10px] font-bold text-slate-700">
+                                        {item.progress}%
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td className="py-3 px-3 text-center">
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold inline-block`}
+                                      style={{
+                                        backgroundColor: item.statusTracker === "Green" ? "#ecfdf5" : item.statusTracker === "Yellow" ? "#fffbeb" : item.statusTracker === "Red" ? "#fef2f2" : "#f1f5f9",
+                                        color: item.statusTracker === "Green" ? "#047857" : item.statusTracker === "Yellow" ? "#b45309" : item.statusTracker === "Red" ? "#b91c1c" : "#475569"
+                                      }}
+                                    >
+                                      {item.statusTracker}
+                                    </span>
+                                  </td>
+                                  <td className="py-3 px-3 text-center">
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold inline-block border`}
+                                      style={{
+                                        backgroundColor: 
+                                          item.priority === "Critical" ? "#fef2f2" : 
+                                          item.priority === "High" ? "#fff7ed" : 
+                                          item.priority === "Medium" ? "#eff6ff" : "#f8fafc",
+                                        color: 
+                                          item.priority === "Critical" ? "#b91c1c" : 
+                                          item.priority === "High" ? "#c2410c" : 
+                                          item.priority === "Medium" ? "#1d4ed8" : "#475569",
+                                        borderColor: 
+                                          item.priority === "Critical" ? "#fecaca" : 
+                                          item.priority === "High" ? "#fed7aa" : 
+                                          item.priority === "Medium" ? "#bfdbfe" : "#e2e8f0"
+                                      }}
+                                    >
+                                      {item.priority === "Critical" ? "P1 (Critical)" : 
+                                       item.priority === "High" ? "P2 (High)" : 
+                                       item.priority === "Medium" ? "P3 (Medium)" : 
+                                       item.priority === "Low" ? "P4 (Low)" : (item.priority || "P3 (Medium)")}
+                                    </span>
+                                  </td>
+                                </>
+                              )}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile Cards View (< md) */}
+                  <div className="md:hidden space-y-2.5">
+                    {selectedMetricPrograms.map((item, index) => (
+                      <div 
+                        key={item.id}
+                        onClick={() => {
+                          setSelectedMetric(null);
+                          (onUpdateProgressClick || onEditProgramClick)?.(item);
+                        }}
+                        className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-2xs hover:shadow-md transition-all active:scale-[0.99] cursor-pointer flex flex-col gap-2 hover:border-orange-300"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[9.5px] font-black text-white bg-[#1e266f] border border-[#f36e21]/40 px-2 py-0.5 rounded-md font-mono">
+                            #{index + 1} • {item.cluster}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold border`}
+                            style={{
+                              backgroundColor: item.statusTracker === "Green" ? "#ecfdf5" : item.statusTracker === "Yellow" ? "#fffbeb" : item.statusTracker === "Red" ? "#fef2f2" : "#f1f5f9",
+                              color: item.statusTracker === "Green" ? "#047857" : item.statusTracker === "Yellow" ? "#b45309" : item.statusTracker === "Red" ? "#b91c1c" : "#475569",
+                              borderColor: item.statusTracker === "Green" ? "#a7f3d0" : item.statusTracker === "Yellow" ? "#fde68a" : item.statusTracker === "Red" ? "#fca5a5" : "#cbd5e1"
+                            }}
+                          >
+                            {item.statusTracker}
+                          </span>
+                        </div>
+
+                        <h4 className="text-xs sm:text-sm font-extrabold text-[#1e266f] leading-snug">
+                          {item.topic}
+                        </h4>
+
+                        <div className="flex items-center justify-between gap-2 text-[10.5px] text-slate-500 border-t border-slate-100 pt-2 mt-0.5">
+                          <span>Owner: <strong className="text-slate-800 font-bold">{item.owner}</strong></span>
+                          <span className="font-mono font-extrabold text-[#1e266f] bg-orange-50 border border-orange-200 px-2 py-0.5 rounded">
+                            {item.progress}% Completed
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
-          )}
+
+            {/* Modal Footer */}
+            <div className="px-4 sm:px-6 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0">
+              <span className="text-xs font-mono text-slate-600 font-bold">
+                Total: <strong className="text-[#f36e21] font-black">{selectedMetricPrograms.length}</strong> Program Inisiatif
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedMetric(null)}
+                className="px-5 py-2 bg-[#f36e21] hover:bg-[#e05d10] text-white text-xs font-black rounded-xl transition-colors cursor-pointer shadow-sm active:scale-95"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1223,7 +1458,7 @@ export default function DashboardView({
         </h3>
         
         {/* Desktop View Table */}
-        <div className="hidden md:block overflow-x-auto">
+        <div className="hidden lg:block overflow-x-auto">
           <table className="w-full text-left text-xs font-sans min-w-[850px]">
             <thead>
               <tr className="bg-slate-55 bg-slate-100 font-mono text-slate-600 font-bold border-b border-slate-200">
@@ -1276,7 +1511,7 @@ export default function DashboardView({
         </div>
 
         {/* Mobile View Cards */}
-        <div className="grid grid-cols-1 gap-4 md:hidden">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-4">
           {clusterStats.map((stat, idx) => {
             const isSelected = selectedMetric === stat.name;
             return (

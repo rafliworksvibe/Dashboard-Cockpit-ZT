@@ -171,18 +171,18 @@ export default function CloudDocumentsView({
   return (
     <div className="space-y-6">
       
-      {/* 1. Header Area with statistics */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-slate-200">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-slate-100 text-slate-700 rounded-lg shrink-0 border border-slate-200">
-            <CloudLightning className="w-5 h-5" />
+      {/* 1. Page Header & Action Trigger */}
+      <div className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
+        <div className="flex items-start sm:items-center gap-2.5 sm:gap-3 min-w-0">
+          <div className="p-2 sm:p-2.5 bg-indigo-50 text-indigo-600 rounded-lg sm:rounded-xl shrink-0 mt-0.5 sm:mt-0">
+            <CloudLightning className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <div className="space-y-0.5">
-            <h2 className="text-lg font-extrabold text-slate-900 font-sans tracking-tight leading-tight">
-              Arsip Dokumen
+          <div className="space-y-0.5 min-w-0">
+            <h2 className="text-xs xs:text-sm sm:text-base font-extrabold text-slate-900 font-sans tracking-tight leading-snug sm:leading-tight">
+              Arsip Dokumen Surat & Referensi
             </h2>
-            <p className="text-xs text-slate-500 max-w-xl">
-              Pusat penyimpanan digital dokumen surat-menyurat dan referensi.
+            <p className="text-[10px] sm:text-xs text-slate-500 leading-normal max-w-2xl hidden xs:block">
+              Pusat penyimpanan digital dokumen surat-menyurat, nota dinas, dan berkas lampiran pendukung.
             </p>
           </div>
         </div>
@@ -190,23 +190,12 @@ export default function CloudDocumentsView({
           <div className="shrink-0 flex items-center gap-2">
             <button
               onClick={() => setIsAddFormOpen(!isAddFormOpen)}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-sm cursor-pointer ${
-                isAddFormOpen 
-                  ? "bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300" 
-                  : "bg-indigo-600 text-white hover:bg-indigo-700"
+              className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg text-[10px] sm:text-xs font-bold text-white transition-all shadow-sm cursor-pointer ${
+                isAddFormOpen ? "bg-rose-600 hover:bg-rose-700" : "bg-[#f36e21] hover:bg-[#db5610]"
               }`}
             >
-              {isAddFormOpen ? (
-                <>
-                  <X className="w-3.5 h-3.5" />
-                  Tutup Formulir
-                </>
-              ) : (
-                <>
-                  <Plus className="w-3.5 h-3.5" />
-                  Unggah Surat
-                </>
-              )}
+              {isAddFormOpen ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+              {isAddFormOpen ? "Tutup Form" : "Unggah Surat"}
             </button>
           </div>
         )}
@@ -413,66 +402,80 @@ export default function CloudDocumentsView({
       )}
 
       {/* 3. Search and filter panel */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="relative w-full sm:max-w-md">
+      <div className="bg-white border border-slate-200 rounded-xl p-3 sm:p-4 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        {/* Keyword Search Input */}
+        <div className="relative w-full lg:max-w-md">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
             placeholder="Cari berdasarkan No Surat, Asal Surat, Perihal..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full text-xs font-semibold bg-white border border-slate-200 rounded-lg pl-10 pr-10 py-2.5 outline-none focus:border-slate-300 focus:ring-1 focus:ring-slate-200 transition-all text-slate-800 placeholder:text-slate-400 shadow-sm"
+            className="w-full text-xs font-semibold bg-slate-50/80 hover:bg-slate-50 focus:bg-white border border-slate-200 focus:border-indigo-500 rounded-lg pl-9 pr-9 py-2 sm:py-2.5 outline-none transition-all text-slate-800 placeholder:text-slate-400 focus:ring-1 focus:ring-indigo-500"
           />
           {searchTerm && (
             <button 
               onClick={() => setSearchTerm("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer animate-fade-in"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer p-0.5"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Tgl:</span>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="bg-white border border-slate-200 rounded text-xs font-medium text-slate-700 outline-none px-2 py-1.5 cursor-pointer focus:border-slate-300 shadow-sm"
-              title="Tanggal Mulai"
-            />
-            <span className="text-slate-400">-</span>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="bg-white border border-slate-200 rounded text-xs font-medium text-slate-700 outline-none px-2 py-1.5 cursor-pointer focus:border-slate-300 shadow-sm"
-              title="Tanggal Selesai"
-            />
+        {/* Filters and Counters Container */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full lg:w-auto">
+          {/* Date Range Picker Group */}
+          <div className="flex items-center justify-between sm:justify-start gap-1.5 bg-slate-50 border border-slate-200 rounded-lg p-1.5 text-xs w-full sm:w-auto">
+            <div className="flex items-center gap-1.5 px-1 shrink-0">
+              <Calendar className="w-3.5 h-3.5 text-slate-500" />
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Tgl:</span>
+            </div>
+            
+            <div className="flex items-center gap-1 flex-1 sm:flex-initial">
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full sm:w-28 bg-white border border-slate-200 rounded text-[11px] font-semibold text-slate-700 outline-none px-1.5 py-1 text-center cursor-pointer focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 shadow-2xs"
+                title="Tanggal Mulai"
+              />
+              <span className="text-slate-400 text-xs shrink-0">-</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full sm:w-28 bg-white border border-slate-200 rounded text-[11px] font-semibold text-slate-700 outline-none px-1.5 py-1 text-center cursor-pointer focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 shadow-2xs"
+                title="Tanggal Selesai"
+              />
+            </div>
+
+            {(startDate || endDate) && (
+              <button
+                onClick={() => {
+                  setStartDate("");
+                  setEndDate("");
+                }}
+                className="text-slate-400 hover:text-rose-600 p-1 rounded hover:bg-rose-50 transition-colors shrink-0"
+                title="Reset Tanggal"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
-          {(startDate || endDate) && (
-            <button
-              onClick={() => {
-                setStartDate("");
-                setEndDate("");
-              }}
-              className="text-slate-400 hover:text-rose-600 p-1.5 rounded hover:bg-rose-50 transition-colors"
-              title="Reset Tanggal"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
-
-          <div className="hidden sm:block w-px h-4 bg-slate-200"></div>
-
-          <div className="text-[10px] font-mono font-bold text-slate-500 whitespace-nowrap">
+          {/* Total Archive Badge Counter */}
+          <div className="flex items-center justify-center px-3 py-2 bg-indigo-50/80 border border-indigo-100 rounded-lg text-[10px] font-mono font-bold text-slate-600 shrink-0 whitespace-nowrap shadow-2xs">
             {filteredDocs.length !== documents.length ? (
-              <span className="text-indigo-600">DITEMUKAN: {filteredDocs.length}</span>
+              <span className="text-indigo-700 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse"></span>
+                DITEMUKAN: <strong className="text-indigo-900 font-extrabold">{filteredDocs.length}</strong> / {documents.length}
+              </span>
             ) : (
-              <span>TOTAL ARSIP: {documents.length}</span>
+              <span className="text-slate-700 flex items-center gap-1">
+                <FileText className="w-3.5 h-3.5 text-indigo-600" />
+                TOTAL ARSIP: <strong className="text-indigo-950 font-extrabold">{documents.length}</strong>
+              </span>
             )}
           </div>
         </div>

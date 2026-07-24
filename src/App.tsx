@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { safeStorage } from "./safeStorage";
 import { 
   getAllPrograms, 
@@ -109,6 +109,20 @@ export default function App() {
   const [selectedProgram, setSelectedProgram] = useState<ProgramJob | null>(null);
   const [selectedProgramForEdit, setSelectedProgramForEdit] = useState<ProgramJob | null>(null);
   const [logToEdit, setLogToEdit] = useState<MeetingLog | null>(null);
+
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Menutup dropdown saat mengeklik di luar area tombol
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -579,54 +593,97 @@ export default function App() {
     <div className="min-h-screen bg-[#f0f2f8] flex flex-col text-slate-900 font-sans selection:bg-[#f36e21] selection:text-white">
       
       {/* 1. Global Executive Header (Full Width Corporate Header without middle nav) */}
-      <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-md border-b border-slate-200 border-t-4 border-[#f36e21] shadow-sm px-4 sm:px-6 md:px-8 py-3 flex items-center justify-between gap-4">
+      <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-md border-b border-slate-200 border-t-4 border-[#f36e21] shadow-sm px-2.5 sm:px-6 md:px-8 py-2 sm:py-3 flex items-center justify-between gap-2 sm:gap-4">
         
         {/* Brand/logo and Title Section */}
-        <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-3 min-w-0 shrink">
           <img 
             src="https://upload.wikimedia.org/wikipedia/commons/5/56/Logo_PT_Kereta_Api_Indonesia_%28Persero%29_2020.svg" 
             alt="KAI Logo" 
-            className="h-6 sm:h-7 w-auto object-contain" 
+            className="h-5 sm:h-7 w-auto object-contain shrink-0" 
             referrerPolicy="no-referrer"
           />
-          <div className="h-5 w-px bg-slate-200 hidden xs:block" />
-          <div>
-            <h1 className="text-[10px] sm:text-xs font-black text-[#1e266f] tracking-tight leading-none">
+          <div className="h-4 sm:h-5 w-px bg-slate-200 hidden xs:block shrink-0" />
+          <div className="min-w-0 overflow-hidden">
+            <h1 className="text-[9px] xs:text-[10px] sm:text-xs font-black text-[#1e266f] tracking-tight leading-tight truncate">
               CORPORATE TRANSFORMATION <span className="text-[#f36e21]">COCKPIT</span>
             </h1>
-            <p className="text-[7.5px] text-slate-400 font-mono tracking-wider mt-0.5 uppercase font-semibold">
-              ZT COCKPIT HUB
+            <p className="text-[7px] sm:text-[7.5px] text-slate-400 font-mono tracking-wider uppercase font-semibold truncate hidden sm:block">
+              DZ COCKPIT HUB
             </p>
           </div>
         </div>
 
-        {/* User Profile & Role Badge */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        {/* User Profile & Role Badge with interactive dropdown */}
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 relative">
           
-          {/* Compact Profile Pill */}
-          <div className="flex items-center gap-2 bg-slate-50/85 border border-slate-200 rounded-full px-3 py-1 shadow-sm h-8 sm:h-9">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse hidden xs:inline" />
-            <div className="flex flex-col text-left font-sans">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] sm:text-xs font-black text-slate-800 leading-none truncate max-w-[120px]">
-                  {currentUser.name || "User"}
-                </span>
-                <span className={`text-[8px] ${checkIsAdmin(currentUser) ? "bg-[#1e266f]" : "bg-slate-600"} text-white px-1.5 py-0.5 rounded-full font-mono font-bold uppercase shrink-0 leading-none`}>
-                  {checkIsAdmin(currentUser) ? "Admin" : "Viewer"}
-                </span>
+          {/* Sisi Kanan: TOMBOL PROFILE & ROLE MENU */}
+          <div className="relative" ref={profileDropdownRef}>
+            {/* Tombol Pemicu Badge User */}
+            <button
+              onClick={() => setIsProfileOpen(!isProfileOpen)}
+              className="flex items-center gap-2 bg-slate-50/90 hover:bg-[#f36e21]/5 border border-slate-200 hover:border-[#f36e21]/30 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full transition-all active:scale-95 shadow-xs shrink-0 cursor-pointer h-7 sm:h-9"
+              title="Klik untuk lihat detail akun"
+            >
+              <div className="w-4.5 h-4.5 sm:w-5.5 sm:h-5.5 rounded-full bg-[#f36e21] text-white flex items-center justify-center text-[10px] sm:text-xs font-black shrink-0">
+                {(currentUser?.name || currentUser?.displayName || "U").charAt(0).toUpperCase()}
               </div>
-            </div>
+              <span className="text-[10px] sm:text-xs font-bold text-slate-800 leading-none truncate max-w-[70px] xs:max-w-[100px] sm:max-w-[150px]">
+                {currentUser?.name || currentUser?.displayName || "User"}
+              </span>
+              <svg className={`w-3 h-3 text-slate-400 transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {/* DROPDOWN DETAIL AKUN & ROLE */}
+            {isProfileOpen && (
+              <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-slate-100 p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                {/* Header Profil Ringkas */}
+                <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#f36e21] to-amber-500 text-white flex items-center justify-center font-black text-sm shadow-inner">
+                    {(currentUser?.name || currentUser?.displayName || "U").charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1 text-left">
+                    <h4 className="text-xs sm:text-sm font-bold text-slate-800 truncate">
+                      {currentUser?.name || currentUser?.displayName || "Pengguna"}
+                    </h4>
+                    <p className="text-[10px] sm:text-xs text-slate-500 truncate">
+                      {currentUser?.email || "email@domain.com"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Detail Informasi Akun & Role */}
+                <div className="py-3 text-xs text-left">
+                  <div className="flex justify-between items-center bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                    <span className="text-slate-500 font-medium">Role Hak Akses:</span>
+                    <span className={`font-bold px-2.5 py-0.5 rounded-full uppercase text-[9px] sm:text-[10px] ${
+                      checkIsAdmin(currentUser) || currentUser?.role === 'ADMIN' 
+                        ? 'bg-[#1e266f]/10 text-[#1e266f] border border-[#1e266f]/20' 
+                        : 'bg-slate-100 text-slate-700 border border-slate-200'
+                    }`}>
+                      {currentUser?.role || (checkIsAdmin(currentUser) ? 'ADMIN' : 'VIEWER')}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Tombol Logout */}
+                <button
+                  onClick={() => {
+                    setIsProfileOpen(false);
+                    handleLogout();
+                  }}
+                  className="w-full mt-1 flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-650 font-bold py-2 rounded-xl text-xs transition-colors cursor-pointer"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  <span>Keluar dari Akun</span>
+                </button>
+              </div>
+            )}
           </div>
-          
-          {/* Logout Action */}
-          <button
-            onClick={handleLogout}
-            className="flex items-center justify-center p-2 bg-red-50 hover:bg-red-100 text-red-650 rounded-full text-[10px] font-black tracking-wider uppercase transition-colors border border-red-200 cursor-pointer active:scale-95 h-8 w-8 sm:h-9 sm:w-9"
-            title="Keluar dari Akun"
-            id="header-logout-btn"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
         </div>
 
       </header>
@@ -638,7 +695,7 @@ export default function App() {
         <aside 
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
-          className={`hidden md:flex flex-col bg-white border-r border-slate-200 sticky top-[61px] h-[calc(100vh-61px)] z-30 transition-all duration-300 ease-in-out shadow-sm shrink-0 ${
+          className={`hidden lg:flex flex-col bg-white border-r border-slate-200 sticky top-[61px] h-[calc(100vh-61px)] z-30 transition-all duration-300 ease-in-out shadow-sm shrink-0 ${
             (isAutoHideEnabled ? !isHovered : isSidebarCollapsed) ? "w-16" : "w-64"
           }`}
         >
@@ -663,21 +720,21 @@ export default function App() {
           </div>
 
           {/* Navigation Tab Links list */}
-          <nav className="flex-1 p-2.5 flex flex-col gap-1 overflow-y-auto overflow-x-hidden">
+          <nav className="flex-1 p-2 flex flex-col gap-1.5 overflow-y-auto overflow-x-hidden">
             
             {/* Tab: Admin Panel (Only for admin user) */}
             {checkIsAdmin(currentUser) && (
               <button
                 id="menu-admin-panel"
                 onClick={() => setActiveTab("admin_panel")}
-                className={`flex items-center gap-3.5 px-3.5 py-3 text-xs font-black tracking-tight font-sans transition-all duration-200 rounded-xl cursor-pointer w-full text-left shrink-0 ${
+                className={`flex items-center gap-3 px-3 py-2.5 text-xs font-black tracking-tight font-sans transition-all duration-200 rounded-xl cursor-pointer w-full text-left shrink-0 ${
                   activeTab === "admin_panel"
-                    ? "bg-red-600 text-white shadow-sm font-extrabold"
+                    ? "bg-red-600 text-white shadow-sm font-extrabold border-l-4 border-amber-300"
                     : "text-slate-650 hover:text-red-600 hover:bg-slate-100"
                 }`}
                 title="Admin Panel"
               >
-                <Shield className="w-4 h-4 shrink-0" />
+                <Shield className={`w-4 h-4 shrink-0 ${activeTab === "admin_panel" ? "text-amber-300" : ""}`} />
                 <span className={`transition-all duration-300 whitespace-nowrap overflow-hidden ${
                   (isAutoHideEnabled ? !isHovered : isSidebarCollapsed) ? "opacity-0 w-0" : "opacity-100 w-auto"
                 }`}>
@@ -690,14 +747,14 @@ export default function App() {
             <button
               id="menu-dashboard"
               onClick={() => setActiveTab("dashboard")}
-              className={`flex items-center gap-3.5 px-3.5 py-3 text-xs font-black tracking-tight font-sans transition-all duration-200 rounded-xl cursor-pointer w-full text-left shrink-0 ${
+              className={`flex items-center gap-3 px-3 py-2.5 text-xs font-black tracking-tight font-sans transition-all duration-200 rounded-xl cursor-pointer w-full text-left shrink-0 ${
                 activeTab === "dashboard"
-                  ? "bg-[#1e266f] text-white shadow-sm font-extrabold"
+                  ? "bg-[#1e266f] text-white shadow-sm font-extrabold border-l-4 border-[#f36e21]"
                   : "text-slate-650 hover:text-[#1e266f] hover:bg-slate-100"
               }`}
               title="Dashboard Cockpit"
             >
-              <LayoutDashboard className="w-4 h-4 shrink-0" />
+              <LayoutDashboard className={`w-4 h-4 shrink-0 ${activeTab === "dashboard" ? "text-[#f36e21]" : ""}`} />
               <span className={`transition-all duration-300 whitespace-nowrap overflow-hidden ${
                 (isAutoHideEnabled ? !isHovered : isSidebarCollapsed) ? "opacity-0 w-0" : "opacity-100 w-auto"
               }`}>
@@ -709,14 +766,14 @@ export default function App() {
             <button
               id="menu-tracker"
               onClick={() => setActiveTab("tracker")}
-              className={`flex items-center gap-3.5 px-3.5 py-3 text-xs font-black tracking-tight font-sans transition-all duration-200 rounded-xl cursor-pointer w-full text-left shrink-0 ${
+              className={`flex items-center gap-3 px-3 py-2.5 text-xs font-black tracking-tight font-sans transition-all duration-200 rounded-xl cursor-pointer w-full text-left shrink-0 ${
                 activeTab === "tracker"
-                  ? "bg-[#1e266f] text-white shadow-sm font-extrabold"
+                  ? "bg-[#1e266f] text-white shadow-sm font-extrabold border-l-4 border-[#f36e21]"
                   : "text-slate-650 hover:text-[#1e266f] hover:bg-slate-100"
               }`}
               title="Program Tracker"
             >
-              <ListTodo className="w-4 h-4 shrink-0" />
+              <ListTodo className={`w-4 h-4 shrink-0 ${activeTab === "tracker" ? "text-[#f36e21]" : ""}`} />
               <span className={`transition-all duration-300 whitespace-nowrap overflow-hidden ${
                 (isAutoHideEnabled ? !isHovered : isSidebarCollapsed) ? "opacity-0 w-0" : "opacity-100 w-auto"
               }`}>
@@ -728,14 +785,14 @@ export default function App() {
             <button
               id="menu-logs"
               onClick={() => setActiveTab("logs")}
-              className={`flex items-center gap-3.5 px-3.5 py-3 text-xs font-black tracking-tight font-sans transition-all duration-200 rounded-xl cursor-pointer w-full text-left shrink-0 ${
+              className={`flex items-center gap-3 px-3 py-2.5 text-xs font-black tracking-tight font-sans transition-all duration-200 rounded-xl cursor-pointer w-full text-left shrink-0 ${
                 activeTab === "logs"
-                  ? "bg-[#1e266f] text-white shadow-sm font-extrabold"
+                  ? "bg-[#1e266f] text-white shadow-sm font-extrabold border-l-4 border-[#f36e21]"
                   : "text-slate-650 hover:text-[#1e266f] hover:bg-slate-100"
               }`}
               title="Meeting Logs"
             >
-              <History className="w-4 h-4 shrink-0" />
+              <History className={`w-4 h-4 shrink-0 ${activeTab === "logs" ? "text-[#f36e21]" : ""}`} />
               <span className={`transition-all duration-300 whitespace-nowrap overflow-hidden ${
                 (isAutoHideEnabled ? !isHovered : isSidebarCollapsed) ? "opacity-0 w-0" : "opacity-100 w-auto"
               }`}>
@@ -747,14 +804,14 @@ export default function App() {
             <button
               id="menu-documents"
               onClick={() => setActiveTab("cloud_docs")}
-              className={`flex items-center gap-3.5 px-3.5 py-3 text-xs font-black tracking-tight font-sans transition-all duration-200 rounded-xl cursor-pointer w-full text-left shrink-0 ${
+              className={`flex items-center gap-3 px-3 py-2.5 text-xs font-black tracking-tight font-sans transition-all duration-200 rounded-xl cursor-pointer w-full text-left shrink-0 ${
                 activeTab === "cloud_docs"
-                  ? "bg-[#1e266f] text-white shadow-sm font-extrabold"
+                  ? "bg-[#1e266f] text-white shadow-sm font-extrabold border-l-4 border-[#f36e21]"
                   : "text-slate-650 hover:text-[#1e266f] hover:bg-slate-100"
               }`}
               title="Arsip Dokumen"
             >
-              <CloudLightning className="w-4 h-4 shrink-0" />
+              <CloudLightning className={`w-4 h-4 shrink-0 ${activeTab === "cloud_docs" ? "text-[#f36e21]" : ""}`} />
               <span className={`transition-all duration-300 whitespace-nowrap overflow-hidden ${
                 (isAutoHideEnabled ? !isHovered : isSidebarCollapsed) ? "opacity-0 w-0" : "opacity-100 w-auto"
               }`}>
@@ -907,7 +964,7 @@ export default function App() {
       />
 
       {/* 5. Minimal Elegant Corporate Footer */}
-      <footer className="bg-white border-t border-slate-200 mt-12 py-5 pb-24 md:pb-5 text-center text-xs font-mono text-slate-400">
+      <footer className="bg-white border-t border-slate-200 mt-12 py-5 pb-24 lg:pb-5 text-center text-xs font-mono text-slate-400">
         <div className="max-w-none mx-auto px-6 md:px-12 flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>ZT Cockpit Control Center © 2026</span>
         </div>
@@ -917,70 +974,70 @@ export default function App() {
       {(checkIsAdmin(currentUser) || currentUser?.role === "ADMIN") && (
         <button
           onClick={() => setIsAddModalOpen(true)}
-          className="fixed bottom-20 right-4 z-50 w-14 h-14 bg-orange-500 hover:bg-orange-600 text-white rounded-full flex items-center justify-center shadow-2xl border-2 border-white active:scale-95 transition-all md:hidden cursor-pointer"
+          className="fixed bottom-20 right-4 sm:right-6 z-50 w-14 h-14 bg-orange-500 hover:bg-orange-600 text-white rounded-full flex items-center justify-center shadow-2xl border-2 border-white active:scale-95 transition-all lg:hidden cursor-pointer"
           title="Tambah Pekerjaan"
         >
           <Plus className="w-7 h-7 stroke-[3]" />
         </button>
       )}
 
-      {/* Sticky Bottom Navigation Bar for Mobile View (< md) */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 py-2 flex justify-around items-center z-40 md:hidden shadow-lg">
+      {/* Sticky Bottom Navigation Bar for Mobile & Tablet View (< lg) */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 px-2 sm:px-6 py-1.5 sm:py-2 flex justify-around sm:justify-center sm:gap-6 md:gap-10 items-center z-40 lg:hidden shadow-lg">
         {/* Menu Admin - Hanya untuk Admin */}
         {(checkIsAdmin(currentUser) || currentUser?.role === "ADMIN") && (
           <button
             onClick={() => setActiveTab("admin_panel")}
-            className={`flex flex-col items-center justify-center gap-0.5 text-xs cursor-pointer ${
-              activeTab === "admin_panel" ? "text-orange-600 font-bold" : "text-gray-500"
+            className={`flex flex-col items-center justify-center gap-0.5 px-3 sm:px-5 py-1 sm:py-1.5 rounded-xl transition-all cursor-pointer ${
+              activeTab === "admin_panel" ? "bg-red-50 text-red-650 font-extrabold" : "text-slate-500 hover:text-slate-800"
             }`}
           >
-            <Shield className="w-5 h-5" />
-            <span className="text-[10px]">Admin</span>
+            <Shield className={`w-4 h-4 sm:w-5 sm:h-5 ${activeTab === "admin_panel" ? "text-red-600" : ""}`} />
+            <span className="text-[10px] sm:text-xs tracking-tight">Admin</span>
           </button>
         )}
 
         {/* Menu Cockpit */}
         <button
           onClick={() => setActiveTab("dashboard")}
-          className={`flex flex-col items-center justify-center gap-0.5 text-xs cursor-pointer ${
-            activeTab === "dashboard" ? "text-orange-600 font-bold" : "text-gray-500"
+          className={`flex flex-col items-center justify-center gap-0.5 px-3 sm:px-5 py-1 sm:py-1.5 rounded-xl transition-all cursor-pointer ${
+            activeTab === "dashboard" ? "bg-indigo-50 text-[#1e266f] font-extrabold" : "text-slate-500 hover:text-slate-800"
           }`}
         >
-          <LayoutDashboard className="w-5 h-5" />
-          <span className="text-[10px]">Cockpit</span>
+          <LayoutDashboard className={`w-4 h-4 sm:w-5 sm:h-5 ${activeTab === "dashboard" ? "text-[#f36e21]" : ""}`} />
+          <span className="text-[10px] sm:text-xs tracking-tight">Cockpit</span>
         </button>
 
         {/* Menu Tracker */}
         <button
           onClick={() => setActiveTab("tracker")}
-          className={`flex flex-col items-center justify-center gap-0.5 text-xs cursor-pointer ${
-            activeTab === "tracker" ? "text-orange-600 font-bold" : "text-gray-500"
+          className={`flex flex-col items-center justify-center gap-0.5 px-3 sm:px-5 py-1 sm:py-1.5 rounded-xl transition-all cursor-pointer ${
+            activeTab === "tracker" ? "bg-indigo-50 text-[#1e266f] font-extrabold" : "text-slate-500 hover:text-slate-800"
           }`}
         >
-          <ListTodo className="w-5 h-5" />
-          <span className="text-[10px]">Tracker</span>
+          <ListTodo className={`w-4 h-4 sm:w-5 sm:h-5 ${activeTab === "tracker" ? "text-[#f36e21]" : ""}`} />
+          <span className="text-[10px] sm:text-xs tracking-tight">Tracker</span>
         </button>
 
         {/* Menu Logs */}
         <button
           onClick={() => setActiveTab("logs")}
-          className={`flex flex-col items-center justify-center gap-0.5 text-xs cursor-pointer ${
-            activeTab === "logs" ? "text-orange-600 font-bold" : "text-gray-500"
+          className={`flex flex-col items-center justify-center gap-0.5 px-3 sm:px-5 py-1 sm:py-1.5 rounded-xl transition-all cursor-pointer ${
+            activeTab === "logs" ? "bg-indigo-50 text-[#1e266f] font-extrabold" : "text-slate-500 hover:text-slate-800"
           }`}
         >
-          <History className="w-5 h-5" />
-          <span className="text-[10px]">Logs</span>
+          <History className={`w-4 h-4 sm:w-5 sm:h-5 ${activeTab === "logs" ? "text-[#f36e21]" : ""}`} />
+          <span className="text-[10px] sm:text-xs tracking-tight">Logs</span>
         </button>
 
         {/* Menu Dokumen */}
         <button
           onClick={() => setActiveTab("cloud_docs")}
-          className={`flex flex-col items-center justify-center gap-0.5 text-xs cursor-pointer ${
-            activeTab === "cloud_docs" ? "text-orange-600 font-bold" : "text-gray-500"
+          className={`flex flex-col items-center justify-center gap-0.5 px-3 sm:px-5 py-1 sm:py-1.5 rounded-xl transition-all cursor-pointer ${
+            activeTab === "cloud_docs" ? "bg-indigo-50 text-[#1e266f] font-extrabold" : "text-slate-500 hover:text-slate-800"
           }`}
         >
-          <CloudLightning className="w-5 h-5" />
-          <span className="text-[10px]">Dokumen</span>
+          <CloudLightning className={`w-4 h-4 sm:w-5 sm:h-5 ${activeTab === "cloud_docs" ? "text-[#f36e21]" : ""}`} />
+          <span className="text-[10px] sm:text-xs tracking-tight">Dokumen</span>
         </button>
       </div>
 

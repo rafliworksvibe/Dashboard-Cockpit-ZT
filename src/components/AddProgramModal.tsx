@@ -20,7 +20,16 @@ export default function AddProgramModal({ isOpen, onClose, onSubmit }: AddProgra
   const [owner, setOwner] = useState("");
   const [ownerDropdownOpen, setOwnerDropdownOpen] = useState(false);
   const ownerDropdownRef = useRef<HTMLDivElement>(null);
-  const ownerOptions = ["DC", "DJ", "DN", "DR", "DS", "DH", "DI", "DF"];
+  const ownerOptions = [
+    "DC", "DJ", "DN", "DR", "DS", "DH", "DI", "DF",
+    "KAI Commuter",
+    "KAI Logistik",
+    "KAI Properti",
+    "KAI Service",
+    "KAI Wisata",
+    "KAI Bandara",
+    "KCIC"
+  ];
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -760,7 +769,7 @@ export default function AddProgramModal({ isOpen, onClose, onSubmit }: AddProgra
 
               <div className="col-span-12">
                 <label className="block text-[10px] font-bold text-slate-600 mb-1.5 uppercase tracking-wider">
-                  Risk / Issue Description (Free-text)
+                  Risk/Issue Description
                 </label>
                 <textarea
                   rows={2}

@@ -30,7 +30,8 @@ import {
   TrendingUp,
   CheckSquare,
   ShieldAlert,
-  MoreVertical
+  MoreVertical,
+  Filter
 } from "lucide-react";
 
 interface ProgramTrackerViewProps {
@@ -384,6 +385,10 @@ export default function ProgramTrackerView({
   // Tab section state to split columns into focused sections
   const [activeSectionTab, setActiveSectionTab] = useState<"All" | "I" | "III" | "V">("All");
   const [showConditionsGuide, setShowConditionsGuide] = useState(false);
+  const [isFilterExpanded, setIsFilterExpanded] = useState(false);
+
+  // Count active filters
+  const activeFilterCount = (selectedCluster !== "All" ? 1 : 0) + (selectedStatus !== "All" ? 1 : 0) + (selectedPriority !== "All" ? 1 : 0) + (selectedPhase !== "All" ? 1 : 0);
 
   const topScrollbarRef = useRef<HTMLDivElement>(null);
   const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -472,7 +477,16 @@ export default function ProgramTrackerView({
 
   // Selection configurations
   const clusterOptions = ["Strategic Transformation", "Corporate Culture", "Change Management", "Investment Governance", "Corporate Insight"];
-  const ownerOptions = ["DC", "DJ", "DN", "DR", "DS", "DH", "DI", "DF"];
+  const ownerOptions = [
+    "DC", "DJ", "DN", "DR", "DS", "DH", "DI", "DF",
+    "KAI Commuter",
+    "KAI Logistik",
+    "KAI Properti",
+    "KAI Service",
+    "KAI Wisata",
+    "KAI Bandara",
+    "KCIC"
+  ];
   const requestOptions = ["From DZ", "Not DZ"];
   const ztRoleOptions = [
     "Orchestrator",
@@ -801,27 +815,98 @@ export default function ProgramTrackerView({
     <div className="space-y-4">
       
       {/* 1. Header Toolbar with actions */}
-      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2">
+      <div className="flex flex-col gap-3 bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200 shadow-sm">
+        {/* Main top row: Search + Mobile Filter Toggle Button + Action Buttons */}
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
           
-          {/* Search box */}
-          <div className="relative col-span-1 md:col-span-2 lg:col-span-1">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Cari Topic, Unit Owner, Isu..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full text-xs pl-8 pr-3 py-2 border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-slate-50"
-            />
+          <div className="flex items-center gap-2 flex-1">
+            {/* Search box */}
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Cari Topic, Unit Owner, Isu..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full text-xs pl-8 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#1e266f] bg-slate-50 font-sans"
+              />
+            </div>
+
+            {/* Filter toggle button for mobile/tablet */}
+            <button
+              type="button"
+              onClick={() => setIsFilterExpanded(!isFilterExpanded)}
+              className={`lg:hidden flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg border text-[10px] sm:text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                isFilterExpanded || activeFilterCount > 0
+                  ? "bg-[#1e266f] text-white border-[#1e266f] shadow-xs"
+                  : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200"
+              }`}
+            >
+              <Filter className="w-3.5 h-3.5" />
+              <span>Filter</span>
+              {activeFilterCount > 0 && (
+                <span className="bg-[#f36e21] text-white text-[10px] font-black px-1.5 py-0.2 rounded-full font-mono">
+                  {activeFilterCount}
+                </span>
+              )}
+              {isFilterExpanded ? (
+                <ChevronUp className="w-3.5 h-3.5 ml-0.5" />
+              ) : (
+                <ChevronDown className="w-3.5 h-3.5 ml-0.5" />
+              )}
+            </button>
           </div>
 
+          {/* Action Button Strip */}
+          <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2">
+            {currentUser?.ownerName && (
+              <div className="flex items-center gap-2 bg-[#f36e21]/5 px-2.5 py-1.5 rounded-lg border border-[#f36e21]/15 mr-1 shrink-0">
+                <span className="text-[10px] font-extrabold text-[#1e266f] tracking-wide">Cluster {currentUser.ownerName} Saja:</span>
+                <button
+                  type="button"
+                  onClick={() => setOnlyMyPrograms(!onlyMyPrograms)}
+                  className={`relative inline-flex h-5.5 w-10 shrink-0 cursor-pointer rounded-full border border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    onlyMyPrograms ? "bg-[#f36e21]" : "bg-slate-300"
+                  }`}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-4.5 w-4.5 transform rounded-full bg-white shadow-md transition duration-200 ease-in-out ${
+                      onlyMyPrograms ? "translate-x-4.5" : "translate-x-0"
+                    }`}
+                  />
+                </button>
+              </div>
+            )}
+
+            <button
+              onClick={handleExportToExcel}
+              className="flex items-center justify-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 transition-all text-white rounded-lg font-bold text-[10px] sm:text-xs shadow-xs cursor-pointer shrink-0"
+              title="Download excel spreadsheet"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <span>Export to Excel</span>
+            </button>
+            
+            {isAdmin && (
+              <button
+                onClick={onAddProgramClick}
+                className="flex items-center justify-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 bg-[#f36e21] hover:bg-[#db5610] active:scale-95 transition-all text-white rounded-lg font-bold text-[10px] sm:text-xs shadow-xs cursor-pointer shrink-0"
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                <span>Tambah Kerja</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Filter Dropdowns: Always visible on Desktop (lg:grid), Collapsible on Mobile/Tablet */}
+        <div className={`${isFilterExpanded ? "grid" : "hidden"} lg:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 pt-2 border-t border-slate-100 lg:border-t-0 lg:pt-0`}>
           {/* Cluster filter */}
           <div>
             <select
               value={selectedCluster}
               onChange={(e) => setSelectedCluster(e.target.value)}
-              className="w-full text-xs px-2.5 py-2 border border-slate-300 rounded focus:ring-1 focus:ring-slate-500 bg-white"
+              className="w-full text-xs px-2.5 py-2 border border-slate-300 rounded-lg focus:ring-1 focus:ring-[#1e266f] bg-white font-sans"
             >
               <option value="All">Semua Cluster</option>
               {clusterOptions.map(c => <option key={c} value={c}>{c}</option>)}
@@ -833,7 +918,7 @@ export default function ProgramTrackerView({
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full text-xs px-2.5 py-2 border border-slate-300 rounded focus:ring-1 bg-white"
+              className="w-full text-xs px-2.5 py-2 border border-slate-300 rounded-lg focus:ring-1 focus:ring-[#1e266f] bg-white font-sans"
             >
               <option value="All">Semua Status</option>
               <option value="Green">Green / Sehat</option>
@@ -848,7 +933,7 @@ export default function ProgramTrackerView({
             <select
               value={selectedPriority}
               onChange={(e) => setSelectedPriority(e.target.value)}
-              className="w-full text-xs px-2.5 py-2 border border-slate-300 rounded focus:ring-1 bg-white"
+              className="w-full text-xs px-2.5 py-2 border border-slate-300 rounded-lg focus:ring-1 focus:ring-[#1e266f] bg-white font-sans"
             >
               <option value="All">Semua Prioritas</option>
               <option value="Critical">P1 (Critical)</option>
@@ -863,54 +948,12 @@ export default function ProgramTrackerView({
             <select
               value={selectedPhase}
               onChange={(e) => setSelectedPhase(e.target.value)}
-              className="w-full text-xs px-2.5 py-2 border border-slate-300 rounded focus:ring-1 bg-white"
+              className="w-full text-xs px-2.5 py-2 border border-slate-300 rounded-lg focus:ring-1 focus:ring-[#1e266f] bg-white font-sans"
             >
               <option value="All">Semua Phase</option>
               {phaseOptions.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
           </div>
-
-        </div>
-
-        {/* Action Button Strip */}
-        <div className="flex items-center gap-2">
-          {currentUser?.ownerName && (
-            <div className="flex items-center gap-2 bg-[#f36e21]/5 px-2.5 py-1.5 rounded-lg border border-[#f36e21]/15 mr-1 shrink-0">
-              <span className="text-[10px] font-extrabold text-[#1e266f] tracking-wide">Cluster {currentUser.ownerName} Saja:</span>
-              <button
-                type="button"
-                onClick={() => setOnlyMyPrograms(!onlyMyPrograms)}
-                className={`relative inline-flex h-5.5 w-10 shrink-0 cursor-pointer rounded-full border border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                  onlyMyPrograms ? "bg-[#f36e21]" : "bg-slate-300"
-                }`}
-              >
-                <span
-                  className={`pointer-events-none inline-block h-4.5 w-4.5 transform rounded-full bg-white shadow-md transition duration-200 ease-in-out ${
-                    onlyMyPrograms ? "translate-x-4.5" : "translate-x-0"
-                  }`}
-                />
-              </button>
-            </div>
-          )}
-
-          <button
-            onClick={handleExportToExcel}
-            className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 transition-all duration-150 text-white rounded-lg font-bold text-xs shadow-3xs cursor-pointer"
-            title="Download excel spreadsheet"
-          >
-            <FileSpreadsheet className="w-4 h-4" />
-            Export to Excel
-          </button>
-          
-          {isAdmin && (
-            <button
-              onClick={onAddProgramClick}
-              className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-[#f36e21] hover:bg-[#db5610] active:scale-95 transition-all duration-150 text-white rounded-lg font-bold text-xs shadow-3xs cursor-pointer"
-            >
-              <PlusCircle className="w-4 h-4" />
-              Tambah Kerja Baru
-            </button>
-          )}
         </div>
       </div>
 
@@ -939,16 +982,16 @@ export default function ProgramTrackerView({
             </p>
           </div>
           
-          <div className="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
+          <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2.5 sm:gap-3 w-full sm:w-auto">
             {/* View Mode Toggle */}
-            <div className="flex items-center gap-0.5 bg-slate-200/70 p-1 rounded-lg border border-slate-300">
+            <div className="flex items-center p-1 bg-[#1e266f]/10 border border-[#1e266f]/20 rounded-xl shadow-2xs gap-0.5">
               <button
                 type="button"
                 onClick={() => setViewMode("card")}
-                className={`px-3 py-1.5 text-[10.5px] font-bold rounded-md transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer ${
                   viewMode === "card"
-                    ? "bg-[#1e266f] text-white shadow-xs"
-                    : "text-slate-600 hover:text-slate-900"
+                    ? "bg-[#1e266f] text-white shadow-sm border border-[#f36e21]/40"
+                    : "text-[#1e266f] hover:bg-white/60 font-bold"
                 }`}
               >
                 Card View
@@ -956,70 +999,62 @@ export default function ProgramTrackerView({
               <button
                 type="button"
                 onClick={() => setViewMode("spreadsheet")}
-                className={`px-3 py-1.5 text-[10.5px] font-bold rounded-md transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer ${
                   viewMode === "spreadsheet"
-                    ? "bg-[#1e266f] text-white shadow-xs"
-                    : "text-slate-600 hover:text-slate-900"
+                    ? "bg-[#1e266f] text-white shadow-sm border border-[#f36e21]/40"
+                    : "text-[#1e266f] hover:bg-white/60 font-bold"
                 }`}
               >
                 Spreadsheet
               </button>
             </div>
 
-            <span className="font-mono text-[10px] sm:text-xs text-slate-500 font-medium tracking-wide bg-slate-100 px-2.5 py-1 rounded border border-slate-200/60 self-center shrink-0">
-              {filteredPrograms.length} entries filtered
+            <span className="font-mono text-[10.5px] font-bold text-[#1e266f] bg-orange-50/90 border border-orange-200/90 px-2.5 py-1 rounded-lg shadow-2xs flex items-center gap-1.5 shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#f36e21] animate-pulse shrink-0" />
+              <span><strong className="text-[#f36e21] font-black">{filteredPrograms.length}</strong> Entri</span>
             </span>
           </div>
         </div>
 
         {/* Section Tabs Navigation with Scroll Assist */}
-        <div className={`${viewMode === "spreadsheet" ? "flex" : "hidden"} flex-col xl:flex-row xl:items-center justify-between border-b border-slate-200 bg-slate-50/50 p-2 gap-2 select-none`}>
-          <div className="flex flex-wrap items-center gap-1">
+        <div className={`${viewMode === "spreadsheet" ? "flex" : "hidden"} flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-100/80 p-2 sm:px-3 select-none`}>
+          <div className="flex flex-wrap items-center gap-1 bg-slate-200/70 p-1 rounded-xl border border-slate-300/70">
             <button
               onClick={() => setActiveSectionTab("All")}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+              className={`px-3 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer ${
                 activeSectionTab === "All"
-                  ? "bg-[#1E293B] text-white shadow-xs"
-                  : "text-slate-600 hover:bg-slate-150"
+                  ? "bg-[#1e266f] text-white shadow-xs border border-[#f36e21]/40"
+                  : "text-slate-700 hover:text-[#1e266f] hover:bg-white/60 font-bold"
               }`}
             >
               Semua Kolom (All)
-            </button>
-            
-            <div className="w-[1px] h-4 bg-slate-300 mx-1 shrink-0" />
-            
+            </button>            
             <button
               onClick={() => setActiveSectionTab("I")}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+              className={`px-3 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer ${
                 activeSectionTab === "I"
-                  ? "bg-slate-200 text-slate-800 border border-slate-300 shadow-xs"
-                  : "text-slate-600 hover:bg-slate-150"
+                  ? "bg-[#1e266f] text-white shadow-xs border border-[#f36e21]/40"
+                  : "text-slate-700 hover:text-[#1e266f] hover:bg-white/60 font-bold"
               }`}
             >
               I. Program Tracker
-            </button>
-            
-            <div className="w-[1px] h-4 bg-slate-300 mx-1 shrink-0" />
-            
+            </button>            
             <button
               onClick={() => setActiveSectionTab("III")}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+              className={`px-3 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer ${
                 activeSectionTab === "III"
-                  ? "bg-rose-100 text-rose-900 border border-rose-200 shadow-xs"
-                  : "text-slate-600 hover:bg-slate-150"
+                  ? "bg-[#1e266f] text-white shadow-xs border border-[#f36e21]/40"
+                  : "text-slate-700 hover:text-[#1e266f] hover:bg-white/60 font-bold"
               }`}
             >
               II. Risk & Issue
-            </button>
-            
-            <div className="w-[1px] h-4 bg-slate-300 mx-1 shrink-0" />
-            
+            </button>            
             <button
               onClick={() => setActiveSectionTab("V")}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+              className={`px-3 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer ${
                 activeSectionTab === "V"
-                  ? "bg-sky-100 text-sky-900 border border-sky-200 shadow-xs"
-                  : "text-slate-600 hover:bg-slate-150"
+                  ? "bg-[#1e266f] text-white shadow-xs border border-[#f36e21]/40"
+                  : "text-slate-700 hover:text-[#1e266f] hover:bg-white/60 font-bold"
               }`}
             >
               III. Attachments
@@ -1027,21 +1062,21 @@ export default function ProgramTrackerView({
           </div>
 
           {/* Quick Scroll Actions Bar */}
-          <div className="flex items-center gap-1.5 px-3 py-1 bg-white rounded-lg border border-slate-200 self-end xl:self-auto shadow-3xs">
-            <span className="text-[10px] font-mono text-slate-500 font-bold uppercase tracking-wider mr-1">Navigasi Tabel:</span>
+          <div className="flex items-center gap-1 px-2.5 py-1 bg-white rounded-lg border border-slate-200/90 shadow-2xs">
+            <span className="text-[10px] font-mono text-slate-500 font-bold uppercase tracking-wider mr-0.5">Navigasi:</span>
             <button
               onClick={() => scrollTable("left")}
-              className="p-1.5 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-600 rounded border border-slate-200 hover:border-indigo-200 text-slate-600 transition-all cursor-pointer active:scale-95 flex items-center justify-center"
+              className="p-1 bg-slate-50 hover:bg-[#1e266f] hover:text-white rounded border border-slate-200 text-[#1e266f] transition-all cursor-pointer active:scale-95 flex items-center justify-center"
               title="Geser Kiri"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => scrollTable("right")}
-              className="p-1.5 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-600 rounded border border-slate-200 hover:border-indigo-200 text-slate-600 transition-all cursor-pointer active:scale-95 flex items-center justify-center"
+              className="p-1 bg-slate-50 hover:bg-[#1e266f] hover:text-white rounded border border-slate-200 text-[#1e266f] transition-all cursor-pointer active:scale-95 flex items-center justify-center"
               title="Geser Kanan"
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
@@ -2451,10 +2486,28 @@ export default function ProgramTrackerView({
                             Ubah Detail
                           </button>
                         ) : (
-                          <div />
+                          <button
+                            type="button"
+                            onClick={() => onUpdateProgressClick(item)}
+                            className="flex items-center gap-1 text-[11px] font-bold text-blue-700 hover:text-blue-800 bg-blue-50 hover:bg-blue-100/60 px-3 py-1.5 rounded-lg transition-colors cursor-pointer border border-blue-100 shadow-3xs"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            Lihat Detail
+                          </button>
                         )}
 
                         <div className="flex items-center gap-1.5">
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => onUpdateProgressClick(item)}
+                              className="flex items-center gap-1 text-[11px] font-bold text-blue-700 hover:text-blue-800 bg-blue-50 hover:bg-blue-100/60 px-3 py-1.5 rounded-lg transition-colors cursor-pointer border border-blue-100 shadow-3xs"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              Lihat Detail
+                            </button>
+                          )}
+
                           <button
                             type="button"
                             onClick={() => onUpdateProgressClick(item)}
