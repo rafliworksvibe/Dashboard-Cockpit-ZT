@@ -21,7 +21,7 @@ import {
   onSnapshot, 
   serverTimestamp 
 } from "firebase/firestore";
-import { ref, deleteObject } from "firebase/storage";
+import { ref, deleteObject, uploadBytesResumable, getDownloadURL, uploadBytes } from "firebase/storage";
 import { db, auth, storage } from "./firebase";
 import { 
   ProgramJob, 
@@ -146,24 +146,41 @@ export function uploadAttachmentToStorage(
   return new Promise(async (resolve, reject) => {
     try {
       const fileToUpload = await compressImage(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (reader.result) {
-          if (onProgress) onProgress(100);
-          resolve({
-            name: fileToUpload.name,
-            size: fileToUpload.size,
-            type: fileToUpload.type || "application/octet-stream",
-            dataUrl: reader.result as string,
-            downloadURL: reader.result as string,
-            storagePath: ""
-          });
-        } else {
-          reject(new Error("Gagal membaca file"));
+      const uid = getCurrentUserUid();
+      const uniqueName = `${Date.now()}_${fileToUpload.name}`;
+      const storagePath = `user_uploads/attachments/${uid}/${uniqueName}`;
+      const storageRef = ref(storage, storagePath);
+
+      const uploadTask = uploadBytesResumable(storageRef, fileToUpload);
+
+      uploadTask.on(
+        "state_changed",
+        (snapshot) => {
+          const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+          if (onProgress) {
+            onProgress(progress);
+          }
+        },
+        (err) => {
+          console.error("[Storage Upload Error]:", err);
+          reject(err);
+        },
+        async () => {
+          try {
+            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+            resolve({
+              name: fileToUpload.name,
+              size: fileToUpload.size,
+              type: fileToUpload.type || "application/octet-stream",
+              dataUrl: downloadURL,
+              downloadURL: downloadURL,
+              storagePath: storagePath
+            });
+          } catch (getUrlErr) {
+            reject(getUrlErr);
+          }
         }
-      };
-      reader.onerror = () => reject(reader.error || new Error("FileReader error"));
-      reader.readAsDataURL(fileToUpload);
+      );
     } catch (err: any) {
       reject(err);
     }
@@ -175,7 +192,59 @@ export function uploadDocumentToStorage(
   file: File,
   onProgress?: (progress: number) => void
 ): Promise<AttachmentFile> {
-  return uploadAttachmentToStorage(file, onProgress);
+  return new Promise(async (resolve, reject) => {
+    try {
+      const fileToUpload = await compressImage(file);
+      const uid = getCurrentUserUid();
+      const uniqueName = `${Date.now()}_${fileToUpload.name}`;
+      const storagePath = `user_uploads/documents/${uid}/${uniqueName}`;
+      const storageRef = ref(storage, storagePath);
+
+      if (onProgress) {
+        const uploadTask = uploadBytesResumable(storageRef, fileToUpload);
+        uploadTask.on(
+          "state_changed",
+          (snapshot) => {
+            const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+            onProgress(progress);
+          },
+          (err) => {
+            console.error("[Storage Document Upload Error]:", err);
+            reject(err);
+          },
+          async () => {
+            try {
+              const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+              resolve({
+                name: fileToUpload.name,
+                size: fileToUpload.size,
+                type: fileToUpload.type || "application/octet-stream",
+                dataUrl: downloadURL,
+                downloadURL: downloadURL,
+                storagePath: storagePath
+              });
+            } catch (getUrlErr) {
+              reject(getUrlErr);
+            }
+          }
+        );
+      } else {
+        const snapshot = await uploadBytes(storageRef, fileToUpload);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        resolve({
+          name: fileToUpload.name,
+          size: fileToUpload.size,
+          type: fileToUpload.type || "application/octet-stream",
+          dataUrl: downloadURL,
+          downloadURL: downloadURL,
+          storagePath: storagePath
+        });
+      }
+    } catch (err: any) {
+      console.error("[uploadDocumentToStorage Error]:", err);
+      reject(err);
+    }
+  });
 }
 
 export async function uploadFileToStorage(file: File): Promise<AttachmentFile> {

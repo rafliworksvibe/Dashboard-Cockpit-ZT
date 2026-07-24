@@ -1,20 +1,35 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ProgramJob, AttachmentFile } from "../types";
-import { uploadFileToStorage, extractStoragePath } from "../dataService";
+import { uploadAttachmentToStorage, extractStoragePath } from "../dataService";
 import { storage } from "../firebase";
 import { ref, deleteObject } from "firebase/storage";
-import { X, Check, AlertTriangle, Coins, Activity, FileText, Info, FileEdit, Eye, Paperclip, Download, File, AlertCircle } from "lucide-react";
+import { addProgram } from "../services/dashboardService";
+import { 
+  X, 
+  Check, 
+  AlertTriangle, 
+  Activity, 
+  Info, 
+  Eye, 
+  Paperclip, 
+  Download, 
+  File, 
+  AlertCircle,
+  FileText,
+  FileEdit
+} from "lucide-react";
 
-interface EditProgramModalProps {
+interface ProgramFormModalProps {
   isOpen: boolean;
-  program: ProgramJob | null;
+  program?: ProgramJob | null; // If present, we are in EDIT mode. Otherwise in ADD mode.
   onClose: () => void;
-  onSubmit: (programId: string, updatedFields: Partial<ProgramJob>) => void;
+  onSubmit: (firstArg: any, secondArg?: any) => void;
 }
 
 type TabType = "tracker" | "risk" | "attachments";
 
-export default function EditProgramModal({ isOpen, program, onClose, onSubmit }: EditProgramModalProps) {
+export default function ProgramFormModal({ isOpen, program, onClose, onSubmit }: ProgramFormModalProps) {
+  const isEditMode = !!program;
   const [activeTab, setActiveTab] = useState<TabType>("tracker");
   const [selectedPreviewFile, setSelectedPreviewFile] = useState<AttachmentFile | null>(null);
 
@@ -47,16 +62,17 @@ export default function EditProgramModal({ isOpen, program, onClose, onSubmit }:
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-  const [ztRole, setZtRole] = useState("");
+
+  const [ztRole, setZtRole] = useState("Orchestrator");
   const [strategicImpact, setStrategicImpact] = useState("");
-  const [phase, setPhase] = useState("");
+  const [phase, setPhase] = useState("Ideation");
   const [progress, setProgress] = useState(0);
   const [statusTracker, setStatusTracker] = useState<ProgramJob["statusTracker"]>("Green");
   const [currentMilestone, setCurrentMilestone] = useState("");
   const [keyIssue, setKeyIssue] = useState("");
   const [actionPlan, setActionPlan] = useState("");
-  const [deadline, setDeadline] = useState("");
   const [startDate, setStartDate] = useState("");
+  const [deadline, setDeadline] = useState("");
   const [decisionNeeded, setDecisionNeeded] = useState<"Yes" | "No">("No");
   const [dzIntervention, setDzIntervention] = useState("No");
   const [ztPicType, setZtPicType] = useState<"preset" | "custom">("preset");
@@ -67,13 +83,7 @@ export default function EditProgramModal({ isOpen, program, onClose, onSubmit }:
   const [priority, setPriority] = useState<ProgramJob["priority"]>("Medium");
   const [request, setRequest] = useState<ProgramJob["request"]>("");
 
-  // -- SECTION 5: File Attachments States --
-  const [files, setFiles] = useState<AttachmentFile[]>([]);
-  const [documentLink, setDocumentLink] = useState("");
-  const [justificationConceptor, setJustificationConceptor] = useState("");
-  const [isDragging, setIsDragging] = useState(false);
-
-  // -- SECTION 3: Risk Issue States --
+  // -- SECTION 2: Risk Issue States --
   const [riskType, setRiskType] = useState<ProgramJob["riskType"]>("");
   const [riskIssue, setRiskIssue] = useState("");
   const [riskProgram, setRiskProgram] = useState("");
@@ -86,59 +96,113 @@ export default function EditProgramModal({ isOpen, program, onClose, onSubmit }:
   const [riskEscalationTo, setRiskEscalationTo] = useState("");
   const [notes, setNotes] = useState("");
 
-  // Populate data when the program changes
+  // -- SECTION 3: File Attachments States --
+  const [files, setFiles] = useState<AttachmentFile[]>([]);
+  const [documentLink, setDocumentLink] = useState("");
+  const [justificationConceptor, setJustificationConceptor] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Populate data when the program or isOpen changes
   useEffect(() => {
-    if (program) {
-      setTopic(program.topic || "");
-      setSubTopic(program.subTopic || "");
-      setCluster(program.cluster || "Strategic Transformation");
-      setOwner(program.owner || "");
-      setZtRole(program.ztRole || "");
-      setStrategicImpact(program.strategicImpact || "");
-      setPhase(program.phase || "");
-      setProgress(program.progress ?? 0);
-      setStatusTracker(program.statusTracker || "Green");
-      setCurrentMilestone(program.currentMilestone || "");
-      setKeyIssue(program.keyIssue || "");
-      setActionPlan(program.actionPlan || "");
-      setStartDate(program.startDate || "");
-      setDeadline(program.deadline || "");
-      setDecisionNeeded(program.decisionNeeded || "No");
-      setDzIntervention(program.dzIntervention || "No");
-      const currentPic = program.ztPic || "";
-      if (["", "ZT", "ZTI", "ZTS", "ZTE"].includes(currentPic)) {
-        setZtPicType("preset");
-        setZtPicPreset(currentPic);
-        setZtPicCustom("");
+    if (isOpen) {
+      if (isEditMode && program) {
+        setTopic(program.topic || "");
+        setSubTopic(program.subTopic || "");
+        setCluster(program.cluster || "Strategic Transformation");
+        setOwner(program.owner || "");
+        setZtRole(program.ztRole || "Orchestrator");
+        setStrategicImpact(program.strategicImpact || "");
+        setPhase(program.phase || "Ideation");
+        setProgress(program.progress ?? 0);
+        setStatusTracker(program.statusTracker || "Green");
+        setCurrentMilestone(program.currentMilestone || "");
+        setKeyIssue(program.keyIssue || "");
+        setActionPlan(program.actionPlan || "");
+        setStartDate(program.startDate || "");
+        setDeadline(program.deadline || "");
+        setDecisionNeeded(program.decisionNeeded || "No");
+        setDzIntervention(program.dzIntervention || "No");
+        
+        const currentPic = program.ztPic || "";
+        if (["", "ZT", "ZTI", "ZTS", "ZTE"].includes(currentPic)) {
+          setZtPicType("preset");
+          setZtPicPreset(currentPic);
+          setZtPicCustom("");
+        } else {
+          setZtPicType("custom");
+          setZtPicPreset("");
+          setZtPicCustom(currentPic);
+        }
+        
+        setConfidence(program.confidence || "Medium");
+        setStrategicFit(program.strategicFit || "Medium");
+        setPriority(program.priority || "Medium");
+        setRequest(program.request || "");
+
+        setRiskType(program.riskType || "");
+        setRiskIssue(program.riskIssue || "");
+        setRiskProgram(program.riskProgram || "");
+        setRiskImpact(program.riskImpact ?? 1);
+        setRiskProbability(program.riskProbability ?? 1);
+        setRiskMitigation(program.riskMitigation || "");
+        setClearThePath(program.clearThePath || "");
+        setRiskOwner(program.riskOwner || "");
+        setRiskStatus(program.riskStatus || "Open");
+        setRiskEscalationTo(program.riskEscalationTo || "");
+
+        setNotes(program.notes || "");
+        setFiles(program.files || program.attachmentFiles || []);
+        setDocumentLink(program.documentLink || "");
+        setJustificationConceptor(program.justificationConceptor || "");
+        
+        setActiveTab("tracker");
       } else {
-        setZtPicType("custom");
+        // Reset to default for Add Mode
+        setTopic("");
+        setSubTopic("");
+        setCluster("Strategic Transformation");
+        setOwner("");
+        setZtRole("Orchestrator");
+        setStrategicImpact("");
+        setPhase("Ideation");
+        setProgress(0);
+        setStatusTracker("Blocked");
+        setCurrentMilestone("");
+        setKeyIssue("");
+        setActionPlan("");
+        setStartDate("");
+        setDeadline("");
+        setDecisionNeeded("No");
+        setDzIntervention("No");
+        setZtPicType("preset");
         setZtPicPreset("");
-        setZtPicCustom(currentPic);
+        setZtPicCustom("");
+        setConfidence("Medium");
+        setStrategicFit("Medium");
+        setPriority("Medium");
+        setRequest("");
+
+        setRiskType("");
+        setRiskIssue("");
+        setRiskProgram("");
+        setRiskImpact(1);
+        setRiskProbability(1);
+        setRiskMitigation("");
+        setClearThePath("");
+        setRiskOwner("");
+        setRiskStatus("Open");
+        setRiskEscalationTo("");
+
+        setNotes("");
+        setFiles([]);
+        setDocumentLink("");
+        setJustificationConceptor("");
+        
+        setActiveTab("tracker");
       }
-      setConfidence(program.confidence || "Medium");
-      setStrategicFit(program.strategicFit || "Medium");
-      setPriority(program.priority || "Medium");
-      setRequest(program.request || "");
-
-      setRiskType(program.riskType || "");
-      setRiskIssue(program.riskIssue || "");
-      setRiskProgram(program.riskProgram || "");
-      setRiskImpact(program.riskImpact ?? 1);
-      setRiskProbability(program.riskProbability ?? 1);
-      setRiskMitigation(program.riskMitigation || "");
-      setClearThePath(program.clearThePath || "");
-      setRiskOwner(program.riskOwner || "");
-      setRiskStatus(program.riskStatus || "Open");
-      setRiskEscalationTo(program.riskEscalationTo || "");
-
-      setNotes(program.notes || "");
-      setFiles(program.files || []);
-      setDocumentLink(program.documentLink || "");
-      setJustificationConceptor(program.justificationConceptor || "");
-      
-      setActiveTab("tracker"); // Default back to first tab
+      setModalError(null);
     }
-  }, [program]);
+  }, [program, isOpen, isEditMode]);
 
   // Automatically calculate statusTracker based on progress
   useEffect(() => {
@@ -153,7 +217,7 @@ export default function EditProgramModal({ isOpen, program, onClose, onSubmit }:
     }
   }, [progress]);
 
-  // Realtime derived risk score
+  // Real-time derived risk score
   const calculatedRiskScore = riskImpact * riskProbability;
   
   const getDerivedRiskLevel = (score: number) => {
@@ -166,6 +230,7 @@ export default function EditProgramModal({ isOpen, program, onClose, onSubmit }:
 
   const riskLevelText = getDerivedRiskLevel(calculatedRiskScore);
 
+  // Automatically update priority based on risk level
   useEffect(() => {
     if (riskLevelText) {
       if (riskLevelText === "Critical") setPriority("Critical");
@@ -176,8 +241,38 @@ export default function EditProgramModal({ isOpen, program, onClose, onSubmit }:
   }, [riskLevelText]);
 
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [deletingIndices, setDeletingIndices] = useState<number[]>([]);
   const [modalError, setModalError] = useState<string | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      processFiles(e.target.files);
+    }
+  };
+
+  const processFiles = async (fileList: FileList) => {
+    setIsUploading(true);
+    setUploadProgress(0);
+    try {
+      const uploadPromises = Array.from(fileList).map(async (file) => {
+        if (file.size > 5000000) {
+          alert(`File "${file.name}" melebihi batas maksimum 5MB.`);
+          return null;
+        }
+        return await uploadAttachmentToStorage(file, (p) => setUploadProgress(p));
+      });
+      const results = await Promise.all(uploadPromises);
+      const validFiles = results.filter((f): f is AttachmentFile => f !== null);
+      setFiles((prev) => [...prev, ...validFiles]);
+    } catch (err: any) {
+      console.error(err);
+      alert("Gagal mengunggah file: " + err.message);
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(null);
+    }
+  };
 
   const handleRemoveAttachment = async (index: number, file: AttachmentFile) => {
     setDeletingIndices((prev) => [...prev, index]);
@@ -200,34 +295,24 @@ export default function EditProgramModal({ isOpen, program, onClose, onSubmit }:
     }
   };
 
-  if (!isOpen || !program) return null;
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      processFiles(e.target.files);
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processFiles(e.dataTransfer.files);
     }
   };
 
-  const processFiles = async (fileList: FileList) => {
-    setIsUploading(true);
-    try {
-      const uploadPromises = Array.from(fileList).map(async (file) => {
-        if (file.size > 5000000) {
-          alert(`File "${file.name}" melebihi batas maksimum 5MB.`);
-          return null;
-        }
-        return await uploadFileToStorage(file);
-      });
-      const results = await Promise.all(uploadPromises);
-      const validFiles = results.filter((f): f is AttachmentFile => f !== null);
-      setFiles((prev) => [...prev, ...validFiles]);
-    } catch (err: any) {
-      console.error(err);
-      alert("Gagal mengunggah file: " + err.message);
-    } finally {
-      setIsUploading(false);
-    }
-  };
+  if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -243,7 +328,9 @@ export default function EditProgramModal({ isOpen, program, onClose, onSubmit }:
       return;
     }
 
-    const updatedFields: Partial<ProgramJob> = {
+    const selectedZtPic = ztPicType === "custom" ? ztPicCustom : ztPicPreset;
+
+    const programFields: Partial<ProgramJob> = {
       topic,
       subTopic,
       cluster,
@@ -257,10 +344,10 @@ export default function EditProgramModal({ isOpen, program, onClose, onSubmit }:
       keyIssue,
       actionPlan,
       startDate,
-      deadline,
+      deadline: deadline || new Date().toISOString().split("T")[0],
       decisionNeeded,
       dzIntervention,
-      ztPic: ztPicType === "custom" ? ztPicCustom : ztPicPreset,
+      ztPic: selectedZtPic,
       confidence,
       strategicFit,
       priority,
@@ -286,7 +373,29 @@ export default function EditProgramModal({ isOpen, program, onClose, onSubmit }:
       justificationConceptor
     };
 
-    onSubmit(program.id, updatedFields);
+    if (!isEditMode) {
+      // Trigger background dashboardService addProgram
+      addProgram({
+        topic,
+        subTopic,
+        cluster,
+        unitOwner: owner,
+        priority,
+        phase,
+        statusTracker,
+        progress,
+        ztPic: selectedZtPic,
+        startDate,
+        deadline: deadline || new Date().toISOString().split("T")[0]
+      }).catch((err) => console.warn("addProgram background write:", err));
+
+      onSubmit(programFields);
+    } else {
+      if (program) {
+        onSubmit(program.id, programFields);
+      }
+    }
+
     onClose();
   };
 
@@ -294,18 +403,22 @@ export default function EditProgramModal({ isOpen, program, onClose, onSubmit }:
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm p-2 sm:p-4 flex items-center justify-center">
       <div className="relative w-full max-w-5xl h-[85vh] sm:h-[85vh] lg:h-[90vh] max-h-[92vh] bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col border border-slate-200 animate-in fade-in zoom-in-95 duration-150 my-auto">
         
-        {/* Modal Top Header (Matching MeetingLogModal Style) */}
+        {/* Modal Top Header */}
         <div className="bg-slate-950 text-white px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between gap-3 shrink-0 border-b border-slate-800 relative">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <div className="p-2 sm:p-2.5 bg-[#f36e21] rounded-lg text-white shrink-0">
-              <FileEdit className="w-4 h-4 sm:w-5 sm:h-5" />
+              {isEditMode ? <FileEdit className="w-4 h-4 sm:w-5 sm:h-5" /> : <Paperclip className="w-4 h-4 sm:w-5 sm:h-5" />}
             </div>
             <div className="min-w-0">
               <h3 className="text-xs sm:text-sm font-extrabold text-white uppercase tracking-wider font-sans leading-tight break-words">
-                Edit Initiative Program Details
+                {isEditMode ? "Edit Initiative Program Details" : "Add Initiative Program Details"}
               </h3>
               <p className="text-[10px] sm:text-xs text-indigo-300 font-mono mt-0.5 font-medium max-w-full truncate">
-                Active Initiative: <span className="text-white font-bold">{program.no ? `[${program.no}] ` : ""}{topic || program.topic}</span>
+                {isEditMode && program ? (
+                  <span>Active Initiative: <span className="text-white font-bold">{program.no ? `[${program.no}] ` : ""}{topic || program.topic}</span></span>
+                ) : (
+                  "Provide implementation details and metrics below"
+                )}
               </p>
             </div>
           </div>
@@ -320,7 +433,7 @@ export default function EditProgramModal({ isOpen, program, onClose, onSubmit }:
           </button>
         </div>
 
-        {/* Tab Navigation Menu strip (Matching MeetingLogModal style) */}
+        {/* Tab Navigation Menu strip */}
         <div className="bg-slate-50 px-4 sm:px-6 py-2.5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 shrink-0">
           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             <button
@@ -328,7 +441,7 @@ export default function EditProgramModal({ isOpen, program, onClose, onSubmit }:
               onClick={() => setActiveTab("tracker")}
               className={`px-3 sm:px-4 py-1.5 text-[11px] sm:text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
                 activeTab === "tracker"
-                  ? "bg-white text-indigo-750 shadow-sm border border-slate-250"
+                  ? "bg-white text-indigo-750 shadow-sm border border-slate-250 font-black text-slate-900 border-slate-300"
                   : "text-slate-550 hover:bg-white hover:text-slate-800"
               }`}
             >
@@ -341,7 +454,7 @@ export default function EditProgramModal({ isOpen, program, onClose, onSubmit }:
               onClick={() => setActiveTab("risk")}
               className={`px-3 sm:px-4 py-1.5 text-[11px] sm:text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
                 activeTab === "risk"
-                  ? "bg-white text-indigo-750 shadow-sm border border-slate-250"
+                  ? "bg-white text-indigo-750 shadow-sm border border-slate-250 font-black text-slate-900 border-slate-300"
                   : "text-slate-550 hover:bg-white hover:text-slate-800"
               }`}
             >
@@ -354,7 +467,7 @@ export default function EditProgramModal({ isOpen, program, onClose, onSubmit }:
               onClick={() => setActiveTab("attachments")}
               className={`px-3 sm:px-4 py-1.5 text-[11px] sm:text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
                 activeTab === "attachments"
-                  ? "bg-white text-indigo-750 shadow-sm border border-slate-250"
+                  ? "bg-white text-indigo-750 shadow-sm border border-slate-250 font-black text-slate-900 border-slate-300"
                   : "text-slate-550 hover:bg-white hover:text-slate-800"
               }`}
             >
@@ -408,7 +521,6 @@ export default function EditProgramModal({ isOpen, program, onClose, onSubmit }:
                 </span>
               </div>
 
-              {/* Grid block */}
               <div className="grid grid-cols-12 gap-5">
                 
                 {/* Topic / Program Name with wide visual text area for typing easily */}
@@ -422,9 +534,9 @@ export default function EditProgramModal({ isOpen, program, onClose, onSubmit }:
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
                     placeholder="Input program or topic name..."
-                    className="w-full text-xs font-semibold bg-white border border-slate-200 hover:border-slate-350 focus:border-indigo-500 rounded-lg p-3 outline-none transition-colors text-slate-800 shadow-sm resize-none"
+                    className="w-full text-xs font-semibold bg-white border border-slate-200 hover:border-slate-300 focus:border-indigo-500 rounded-lg p-3 outline-none transition-colors text-slate-800 shadow-sm resize-none"
                   />
-                  <p className="text-[10 px] text-slate-400 mt-1">Spacious text field allows seeing complete title when typing.</p>
+                  <p className="text-[10px] text-slate-400 mt-1">Spacious text field allows seeing complete title when typing.</p>
                 </div>
 
                 <div className="col-span-12 md:col-span-3">
@@ -440,7 +552,7 @@ export default function EditProgramModal({ isOpen, program, onClose, onSubmit }:
                   />
                 </div>
 
-                 <div className="col-span-12 md:col-span-3">
+                <div className="col-span-12 md:col-span-3">
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
                     Cluster <span className="text-red-500">*</span>
                   </label>
@@ -645,7 +757,7 @@ export default function EditProgramModal({ isOpen, program, onClose, onSubmit }:
                     value={currentMilestone}
                     onChange={(e) => setCurrentMilestone(e.target.value)}
                     placeholder="Input current milestone achievements..."
-                    className="w-full text-xs font-medium bg-white border border-slate-200 hover:border-slate-350 rounded-lg p-2.5 outline-none transition-colors text-slate-800 shadow-sm resize-none"
+                    className="w-full text-xs font-medium bg-white border border-slate-200 hover:border-slate-300 rounded-lg p-2.5 outline-none transition-colors text-slate-800 shadow-sm resize-none"
                   />
                 </div>
 
@@ -659,7 +771,7 @@ export default function EditProgramModal({ isOpen, program, onClose, onSubmit }:
                     value={keyIssue}
                     onChange={(e) => setKeyIssue(e.target.value)}
                     placeholder="State key issues or decisions needed..."
-                    className="w-full text-xs font-medium bg-white border border-slate-200 hover:border-slate-350 rounded-lg p-2.5 outline-none transition-colors text-slate-800 shadow-sm resize-none"
+                    className="w-full text-xs font-medium bg-white border border-slate-200 hover:border-slate-300 rounded-lg p-2.5 outline-none transition-colors text-slate-800 shadow-sm resize-none"
                   />
                 </div>
 
@@ -673,7 +785,7 @@ export default function EditProgramModal({ isOpen, program, onClose, onSubmit }:
                     value={actionPlan}
                     onChange={(e) => setActionPlan(e.target.value)}
                     placeholder="Detail action plan or recovery track..."
-                    className="w-full text-xs font-medium bg-white border border-slate-200 hover:border-slate-350 rounded-lg p-2.5 outline-none transition-colors text-slate-800 shadow-sm resize-none"
+                    className="w-full text-xs font-medium bg-white border border-slate-200 hover:border-slate-300 rounded-lg p-2.5 outline-none transition-colors text-slate-800 shadow-sm resize-none"
                   />
                 </div>
 
@@ -827,7 +939,7 @@ export default function EditProgramModal({ isOpen, program, onClose, onSubmit }:
                     value={clearThePath}
                     onChange={(e) => setClearThePath(e.target.value)}
                     placeholder="Input action or support required to clear the path..."
-                    className="w-full text-xs font-medium bg-white border border-slate-200 hover:border-slate-350 rounded-lg p-3 outline-none transition-colors text-slate-800 shadow-sm resize-none"
+                    className="w-full text-xs font-medium bg-white border border-slate-200 hover:border-slate-300 rounded-lg p-3 outline-none transition-colors text-slate-800 shadow-sm resize-none"
                   />
                 </div>
 
@@ -835,9 +947,7 @@ export default function EditProgramModal({ isOpen, program, onClose, onSubmit }:
             </div>
           )}
 
-
-
-          {/* TAB 3: RISK TRACKER */}
+          {/* TAB 2: RISK TRACKER */}
           {activeTab === "risk" && (
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 sm:p-6 space-y-4 sm:space-y-5 animate-in fade-in duration-100">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-2">
@@ -899,7 +1009,7 @@ export default function EditProgramModal({ isOpen, program, onClose, onSubmit }:
 
                 <div className="col-span-12 md:col-span-3">
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                    Probability level (1-4)
+                    Probability (1-4)
                   </label>
                   <select
                     value={riskProbability}
@@ -915,24 +1025,24 @@ export default function EditProgramModal({ isOpen, program, onClose, onSubmit }:
 
                 <div className="col-span-12 md:col-span-3">
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                    Calculated Score
+                    Level Score
                   </label>
-                  <div className="w-full text-sm font-mono font-extrabold bg-[#F8FAFC] border border-slate-200 rounded-lg py-2.5 text-center text-slate-800 select-none shadow-sm h-[38px] flex items-center justify-center">
-                    {calculatedRiskScore} <span className="text-[10px] text-slate-450 ml-1.5">(Impact * Prob)</span>
+                  <div className="w-full text-xs font-mono font-black bg-[#F8FAFC] border border-slate-200 rounded-lg py-2.5 text-center text-slate-850 select-none shadow-xs h-[38px] flex items-center justify-center">
+                    {calculatedRiskScore}
                   </div>
                 </div>
 
                 <div className="col-span-12 md:col-span-3">
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                    Severity Level
+                    Calculated Severity
                   </label>
-                  <div className={`w-full text-xs font-bold border rounded-lg py-2.5 text-center shadow-sm h-[38px] flex items-center justify-center transition-all ${
-                    riskLevelText === "Critical" ? "bg-red-100 text-red-900 border-red-200" :
-                    riskLevelText === "High" ? "bg-orange-100 text-orange-800 border-orange-200" :
-                    riskLevelText === "Medium" ? "bg-yellow-100 text-yellow-800 border-yellow-200" :
-                    riskLevelText === "Low" && calculatedRiskScore >= 4 ? "bg-lime-100 text-lime-800 border-lime-200" :
-                    riskLevelText === "Low" ? "bg-cyan-100 text-cyan-800 border-cyan-200" :
-                    "bg-slate-100 text-slate-600 border-slate-200"
+                  <div className={`w-full text-xs font-black border rounded-lg py-2.5 text-center shadow-xs h-[38px] flex items-center justify-center transition-all ${
+                    riskLevelText === "Critical" ? "bg-red-50 text-red-700 border-red-200 font-extrabold animate-pulse" :
+                    riskLevelText === "High" ? "bg-orange-50 text-orange-700 border-orange-200 font-bold" :
+                    riskLevelText === "Medium" ? "bg-yellow-50 text-yellow-800 border-yellow-200" :
+                    riskLevelText === "Low" && calculatedRiskScore >= 4 ? "bg-emerald-55/10 text-emerald-800 border-emerald-200" :
+                    riskLevelText === "Low" ? "bg-cyan-50 text-cyan-700 border-cyan-200" :
+                    "bg-slate-50 text-slate-400 border-slate-200"
                   }`}>
                     {riskLevelText || "-"}
                   </div>
@@ -940,12 +1050,12 @@ export default function EditProgramModal({ isOpen, program, onClose, onSubmit }:
 
                 <div className="col-span-12 md:col-span-6">
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                    Risk / Action Status
+                    Risk / Issue Status
                   </label>
                   <select
                     value={riskStatus}
                     onChange={(e) => setRiskStatus(e.target.value as any)}
-                    className="w-full text-xs font-medium bg-white border border-slate-200 hover:border-slate-300 rounded-lg px-3 py-2.5 outline-none transition-colors text-slate-800 shadow-sm"
+                    className="w-full text-xs font-medium bg-white border border-slate-200 hover:border-slate-300 rounded-lg px-3 py-2.5 outline-none transition-colors text-slate-800 shadow-sm animate-fade-in"
                   >
                     <option value="Open">Open</option>
                     <option value="In Progress">In Progress</option>
@@ -955,26 +1065,39 @@ export default function EditProgramModal({ isOpen, program, onClose, onSubmit }:
 
                 <div className="col-span-12 md:col-span-6">
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                    Escalation Authority Required
+                    Escalation Required To
                   </label>
                   <input
                     type="text"
                     value={riskEscalationTo}
                     onChange={(e) => setRiskEscalationTo(e.target.value)}
-                    placeholder="e.g. PMO Director or DZ"
+                    placeholder="e.g. DZ, Board, PMO..."
                     className="w-full text-xs font-medium bg-white border border-slate-200 hover:border-slate-300 rounded-lg px-3 py-2.5 outline-none transition-colors text-slate-800 shadow-sm"
                   />
                 </div>
 
                 <div className="col-span-12">
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                    Mitigation / Contingency Action details
+                    Mitigation / Action Plan Plan
                   </label>
                   <textarea
                     rows={3}
                     value={riskMitigation}
                     onChange={(e) => setRiskMitigation(e.target.value)}
-                    placeholder="Detail specific activities and deadlines to resolve or mitigate..."
+                    placeholder="Describe specific actions taken to eliminate, avoid or mitigate this risk..."
+                    className="w-full text-xs font-medium bg-white border border-slate-200 hover:border-slate-350 rounded-lg p-3 outline-none transition-colors text-slate-800 shadow-sm resize-none"
+                  />
+                </div>
+
+                <div className="col-span-12">
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                    General Implementation Notes
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Optional implementation details, general progress notes..."
                     className="w-full text-xs font-medium bg-white border border-slate-200 hover:border-slate-350 rounded-lg p-3 outline-none transition-colors text-slate-800 shadow-sm resize-none"
                   />
                 </div>
@@ -982,193 +1105,196 @@ export default function EditProgramModal({ isOpen, program, onClose, onSubmit }:
             </div>
           )}
 
-          {/* TAB 5: ATTACHMENTS */}
+          {/* TAB 3: DOCUMENT / FILE ATTACHMENTS */}
           {activeTab === "attachments" && (
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 sm:p-6 space-y-4 sm:space-y-5 animate-in fade-in duration-100">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-2">
                 <h4 className="text-xs font-bold text-slate-800 tracking-wider font-mono uppercase">
-                  SECTION III: DOCUMENT / FILE ATTACHMENTS
+                  SECTION III: DOCUMENT REFERENCE & STORAGE
                 </h4>
                 <span className="text-[10px] bg-sky-50 text-sky-700 px-2.5 py-0.5 rounded-full font-mono font-bold">
-                  ATTACHMENTS
+                  ATTACHMENT SYSTEM
                 </span>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-5">
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-600 mb-1.5 uppercase tracking-wider">
-                    Konseptor Justifikasi
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                    Konseptor Justifikasi / Author
                   </label>
                   <input
                     type="text"
                     value={justificationConceptor}
                     onChange={(e) => setJustificationConceptor(e.target.value)}
-                    placeholder="Masukkan nama konseptor justifikasi..."
-                    className="w-full text-xs font-medium bg-white border border-slate-200 hover:border-slate-350 rounded-lg px-3 py-2.5 outline-none transition-colors text-slate-800 shadow-sm"
+                    placeholder="State creator or author of initiative document..."
+                    className="w-full text-xs font-medium bg-white border border-slate-200 hover:border-slate-300 rounded-lg px-3 py-2.5 outline-none transition-colors text-slate-800 shadow-sm"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-600 mb-1.5 uppercase tracking-wider">
-                    Document / Reference Link
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                    External Document Reference Link (Google Drive, Sharepoint etc)
                   </label>
                   <input
                     type="url"
                     value={documentLink}
                     onChange={(e) => setDocumentLink(e.target.value)}
-                    placeholder="e.g. https://drive.google.com/your-document-link"
-                    className="w-full text-xs font-medium bg-white border border-slate-200 hover:border-slate-350 rounded-lg px-3 py-2.5 outline-none transition-colors text-slate-800 shadow-sm"
+                    placeholder="e.g. https://drive.google.com/..."
+                    className="w-full text-xs font-medium bg-white border border-slate-200 hover:border-slate-300 rounded-lg px-3 py-2.5 outline-none transition-colors text-slate-850 shadow-sm"
                   />
                 </div>
 
+                {/* Upload Zone */}
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-600 mb-1.5 uppercase tracking-wider">
-                    Upload Attachment Files
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                    Attached Files (Upload directly to storage)
                   </label>
-                  <div 
-                    className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
+                  
+                  <div
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    className={`border-2 border-dashed rounded-xl p-6 text-center transition-all flex flex-col items-center justify-center gap-2 cursor-pointer ${
                       isDragging 
-                        ? "border-slate-800 bg-slate-50/50" 
-                        : "border-slate-200 hover:border-slate-300 hover:bg-slate-50/20"
+                        ? "border-[#f36e21] bg-orange-50/30" 
+                        : "border-slate-300 hover:border-slate-400 bg-slate-50/50 hover:bg-slate-50"
                     }`}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setIsDragging(true);
-                }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  setIsDragging(false);
-                  if (e.dataTransfer.files) {
-                    processFiles(e.dataTransfer.files);
-                  }
-                }}
-                onClick={() => document.getElementById("edit-file-upload-input")?.click()}
-              >
-                <input
-                  id="edit-file-upload-input"
-                  type="file"
-                  multiple
-                  className="hidden"
-                  onChange={handleFileChange}
-                />
-                 <div className="flex flex-col items-center justify-center space-y-2">
-                  {isUploading ? (
-                    <div className="flex flex-col items-center justify-center space-y-2 py-4">
-                      <div className="w-8 h-8 border-4 border-slate-800 border-t-transparent rounded-full animate-spin"></div>
-                      <p className="text-xs font-bold text-slate-700">Mengunggah file ke Firebase Storage...</p>
+                    onClick={() => document.getElementById("reusable-file-uploader")?.click()}
+                  >
+                    <Paperclip className="w-8 h-8 text-slate-400" />
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-bold text-slate-700">Drag & drop files here, or <span className="text-[#f36e21] hover:underline">browse files</span></p>
+                      <p className="text-[10px] text-slate-500 font-semibold">Sertakan dokumen pendukung, memo, pdf, gambar atau spreadsheet (Maks. 5MB per file)</p>
                     </div>
-                  ) : (
-                    <>
-                      <div className="p-3 bg-slate-50 rounded-full text-slate-700 border border-slate-100 flex items-center justify-center">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                        </svg>
+                    <input
+                      id="reusable-file-uploader"
+                      type="file"
+                      multiple
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                  </div>
+
+                  {isUploading && (
+                    <div className="mt-3.5 p-3 bg-indigo-50/50 border border-indigo-100 rounded-lg flex items-center justify-between gap-3 animate-pulse">
+                      <div className="flex items-center gap-2.5">
+                        <Activity className="w-4 h-4 text-[#f36e21] shrink-0 animate-spin" />
+                        <span className="text-xs font-bold text-indigo-900">Mengunggah file ke Cloud Storage...</span>
                       </div>
-                      <p className="text-xs font-bold text-slate-700">
-                        Drag and drop your files here, or <span className="text-slate-900 hover:underline">browse</span>
-                      </p>
-                      <p className="text-[10px] text-slate-500 font-medium">
-                        PDF, DOCX, XLSX, PNG, or JPG up to 5MB
-                      </p>
-                    </>
+                      {uploadProgress !== null && (
+                        <span className="text-xs font-mono font-black text-indigo-700">{uploadProgress}%</span>
+                      )}
+                    </div>
                   )}
                 </div>
-              </div>
-              </div>
-              </div>
 
-              {files.length > 0 && (
-                <div className="mt-4 border border-slate-100 rounded-lg divide-y divide-slate-100">
-                  {files.map((file, index) => (
-                    <div key={index} className="p-3 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
-                      <div className="flex items-center space-x-3 overflow-hidden">
-                        <div className="p-2 bg-slate-100 rounded text-slate-600 flex-shrink-0">
-                          {file.type.includes("image") ? (
-                            <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                          ) : file.type.includes("pdf") ? (
-                            <svg className="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                            </svg>
-                          ) : (
-                            <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                          )}
-                        </div>
-                        <div className="overflow-hidden">
-                          <p className="text-xs font-bold text-slate-700 truncate">{file.name}</p>
-                          <p className="text-[10px] text-slate-500 font-semibold">{(file.size / 1024).toFixed(1)} KB</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedPreviewFile(file);
-                          }}
-                          className="p-1.5 hover:bg-slate-100 text-slate-550 hover:text-indigo-650 rounded-lg transition-colors flex items-center justify-center cursor-pointer"
-                          title="Pratinjau File"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <a
-                          href={file.dataUrl}
-                          download={file.name}
-                          className="p-1.5 hover:bg-slate-100 text-slate-500 hover:text-slate-800 rounded-lg transition-colors flex items-center justify-center"
-                          title="Download File"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                          </svg>
-                        </a>
-                        <button
-                          type="button"
-                          disabled={deletingIndices.includes(index)}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveAttachment(index, file);
-                          }}
-                          className="p-1.5 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
-                          title="Hapus Attachment"
-                        >
-                          {deletingIndices.includes(index) ? (
-                            <div className="w-3.5 h-3.5 border-2 border-rose-600 border-t-transparent rounded-full animate-spin" />
-                          ) : (
-                            <X className="w-4 h-4" />
-                          )}
-                        </button>
-                      </div>
+                {/* File Attachment list */}
+                {files.length > 0 && (
+                  <div className="border border-slate-150 rounded-xl overflow-hidden bg-white shadow-3xs max-h-60 overflow-y-auto">
+                    <div className="bg-slate-50 px-4 py-2 border-b border-slate-150 flex justify-between items-center shrink-0">
+                      <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Berkas Terlampir ({files.length})</span>
                     </div>
-                  ))}
-                </div>
-              )}
+
+                    <div className="divide-y divide-slate-100">
+                      {files.map((file, index) => {
+                        const isDeleting = deletingIndices.includes(index);
+                        return (
+                          <div key={index} className="px-4 py-3 flex items-center justify-between gap-3 bg-white hover:bg-slate-50/50 transition-colors">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="p-2 bg-slate-100 rounded-lg shrink-0">
+                                {file.type.includes("image") ? (
+                                  <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                ) : file.type.includes("pdf") ? (
+                                  <svg className="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                  </svg>
+                                ) : (
+                                  <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                  </svg>
+                                )}
+                              </div>
+                              <div className="overflow-hidden">
+                                <p className="text-xs font-bold text-slate-700 truncate" title={file.name}>{file.name}</p>
+                                <p className="text-[10px] text-slate-500 font-semibold">{(file.size / 1024).toFixed(1)} KB</p>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                disabled={isDeleting}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedPreviewFile(file);
+                                }}
+                                className="p-1.5 hover:bg-slate-100 text-slate-500 hover:text-[#f36e21] rounded-lg transition-colors cursor-pointer"
+                                title="Pratinjau File"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              
+                              <a
+                                href={file.downloadURL || file.dataUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                download={file.name}
+                                className="p-1.5 hover:bg-slate-100 text-slate-500 hover:text-slate-800 rounded-lg transition-colors"
+                                title="Download File"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Download className="w-4 h-4" />
+                              </a>
+
+                              <button
+                                type="button"
+                                disabled={isDeleting}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRemoveAttachment(index, file);
+                                }}
+                                className={`p-1.5 hover:bg-rose-50 rounded-lg transition-colors ${
+                                  isDeleting ? "text-slate-300" : "text-slate-400 hover:text-rose-600 cursor-pointer"
+                                }`}
+                                title="Hapus Berkas"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
         </form>
 
-        {/* Footer Actions */}
-        <div className="bg-slate-50 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-end gap-2 sm:gap-3 border-t border-slate-200 select-none shrink-0">
+        {/* Footer Panel Actions */}
+        <div className="bg-slate-50 px-6 py-4 flex items-center justify-end gap-3 border-t border-slate-200 shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="px-3.5 sm:px-4 py-2 sm:py-2.5 border border-slate-300 rounded-lg text-xs font-bold text-slate-700 bg-white hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
+            className="px-4 py-2.5 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 transition-colors"
           >
             Cancel
           </button>
-          
           <button
             type="submit"
             onClick={handleSubmit}
-            className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg text-xs font-extrabold text-white bg-[#f36e21] hover:bg-[#db5610] shadow-md transition-all font-sans flex items-center gap-1.5 cursor-pointer shrink-0"
+            disabled={isUploading || deletingIndices.length > 0}
+            className={`px-6 py-2.5 rounded-lg text-xs font-extrabold text-white shadow-sm transition-all font-sans ${
+              isUploading || deletingIndices.length > 0
+                ? "bg-slate-300 cursor-not-allowed opacity-70" 
+                : "bg-[#f36e21] hover:bg-[#db5610] cursor-pointer"
+            }`}
           >
-            <Check className="w-4 h-4" />
-            Apply Changes
+            {isUploading ? "Uploading File..." : isEditMode ? "Update Program Details" : "Create Program Initiative"}
           </button>
         </div>
 
@@ -1176,7 +1302,8 @@ export default function EditProgramModal({ isOpen, program, onClose, onSubmit }:
         {selectedPreviewFile && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[110] p-4">
             <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full overflow-hidden flex flex-col border border-slate-200 animate-in fade-in duration-150">
-              {/* Modal Header */}
+              
+              {/* Preview Header */}
               <div className="px-5 py-4 border-b border-slate-150 bg-slate-50 flex items-center justify-between">
                 <div className="flex items-center gap-2 min-w-0">
                   <Paperclip className="w-4 h-4 text-[#f36e21] shrink-0" />
@@ -1194,12 +1321,12 @@ export default function EditProgramModal({ isOpen, program, onClose, onSubmit }:
                 </button>
               </div>
 
-              {/* Modal Content */}
+              {/* Preview Content */}
               <div className="p-6 overflow-y-auto flex flex-col items-center justify-center bg-slate-50/50 min-h-[300px] max-h-[55vh]">
                 {selectedPreviewFile.type.startsWith("image/") ? (
                   <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-sm animate-in zoom-in-95 duration-150">
                     <img
-                      src={selectedPreviewFile.dataUrl}
+                      src={selectedPreviewFile.downloadURL || selectedPreviewFile.dataUrl}
                       alt={selectedPreviewFile.name}
                       className="max-w-full max-h-[45vh] object-contain rounded"
                       referrerPolicy="no-referrer"
@@ -1235,7 +1362,7 @@ export default function EditProgramModal({ isOpen, program, onClose, onSubmit }:
                 )}
               </div>
 
-              {/* Modal Footer */}
+              {/* Preview Footer */}
               <div className="px-5 py-4 bg-slate-50 border-t border-slate-150 flex items-center justify-between">
                 <span className="text-xs font-mono text-slate-500">
                   Ukuran: {(selectedPreviewFile.size / 1024).toFixed(1)} KB
@@ -1249,7 +1376,9 @@ export default function EditProgramModal({ isOpen, program, onClose, onSubmit }:
                     Tutup
                   </button>
                   <a
-                    href={selectedPreviewFile.dataUrl}
+                    href={selectedPreviewFile.downloadURL || selectedPreviewFile.dataUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     download={selectedPreviewFile.name}
                     className="px-5 py-2 text-xs font-bold text-white bg-[#f36e21] hover:bg-[#db5610] rounded-lg shadow-sm transition-colors flex items-center gap-1.5"
                   >
@@ -1258,6 +1387,7 @@ export default function EditProgramModal({ isOpen, program, onClose, onSubmit }:
                   </a>
                 </div>
               </div>
+
             </div>
           </div>
         )}

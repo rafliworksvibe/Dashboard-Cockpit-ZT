@@ -31,9 +31,8 @@ import AdminDashboardView from "./components/AdminDashboardView";
 import ProgramTrackerView from "./components/ProgramTrackerView";
 import MeetingLogsView from "./components/MeetingLogsView";
 import CloudDocumentsView from "./components/CloudDocumentsView";
-import AddProgramModal from "./components/AddProgramModal";
+import ProgramFormModal from "./components/ProgramFormModal";
 import MeetingLogModal from "./components/MeetingLogModal";
-import EditProgramModal from "./components/EditProgramModal";
 import AuthView from "./components/AuthView";
 import { 
   LayoutDashboard, 
@@ -660,10 +659,12 @@ export default function App() {
                     <span className="text-slate-500 font-medium">Role Hak Akses:</span>
                     <span className={`font-bold px-2.5 py-0.5 rounded-full uppercase text-[9px] sm:text-[10px] ${
                       checkIsAdmin(currentUser) || currentUser?.role === 'ADMIN' 
-                        ? 'bg-[#1e266f]/10 text-[#1e266f] border border-[#1e266f]/20' 
-                        : 'bg-slate-100 text-slate-700 border border-slate-200'
+                        ? 'bg-red-50 text-red-700 border border-red-200' 
+                        : currentUser?.role === 'TEAM_INTERNAL'
+                          ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                          : 'bg-slate-100 text-slate-700 border border-slate-200'
                     }`}>
-                      {currentUser?.role || (checkIsAdmin(currentUser) ? 'ADMIN' : 'VIEWER')}
+                      {checkIsAdmin(currentUser) ? 'ADMIN' : (currentUser?.role || 'VIEWER')}
                     </span>
                   </div>
                 </div>
@@ -929,7 +930,7 @@ export default function App() {
       {/* 4. Overlay Popups Modals Component Placement */}
       
       {/* Form Tambah Program Baru */}
-      <AddProgramModal 
+      <ProgramFormModal 
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSubmit={handleAddProgram}
@@ -953,7 +954,7 @@ export default function App() {
       />
 
       {/* Full detail edit modal */}
-      <EditProgramModal 
+      <ProgramFormModal 
         isOpen={isEditModalOpen}
         program={selectedProgramForEdit}
         onClose={() => {

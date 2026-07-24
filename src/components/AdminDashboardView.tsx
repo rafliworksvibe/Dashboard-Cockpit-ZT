@@ -18,6 +18,7 @@ import {
   FolderOpen
 } from "lucide-react";
 import { ProgramJob, MeetingLog, CloudDocument, AttachmentFile } from "../types";
+import { ADMIN_UID, SECONDARY_ADMIN_UID } from "../utils/rbac";
 
 interface AdminDashboardViewProps {
   usersList: any[];
@@ -58,11 +59,14 @@ export default function AdminDashboardView({
     usersList.forEach(u => {
       const uId = u.uid || u.id;
       if (uId && !userMap.has(uId)) {
+        const isAdmin = uId === ADMIN_UID || uId === SECONDARY_ADMIN_UID;
         userMap.set(uId, {
           ...u,
           uid: uId,
           name: u.displayName || u.name || (u.email ? u.email.split('@')[0] : "Pengguna"),
-          email: u.email || "-"
+          email: u.email || "-",
+          role: isAdmin ? "ADMIN" : (u.role || "VIEWER"),
+          roleName: isAdmin ? "Admin" : (u.roleName || (u.role === "TEAM_INTERNAL" ? "Team Internal" : "Viewer"))
         });
       }
     });
@@ -412,7 +416,13 @@ export default function AdminDashboardView({
                       {selectedUserData.displayName || selectedUserData.name || (selectedUserData.email && selectedUserData.email !== "-" ? selectedUserData.email.split('@')[0] : "Pengguna")}
                     </h3>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
-                      <span className="text-[10px] font-black bg-rose-50 text-rose-600 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                      <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+                        selectedUserData.role === "ADMIN"
+                          ? "bg-red-50 text-red-700 border border-red-200"
+                          : selectedUserData.role === "TEAM_INTERNAL"
+                            ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                            : "bg-slate-100 text-slate-700 border border-slate-200"
+                      }`}>
                         {selectedUserData.roleName || selectedUserData.role}
                       </span>
                       <span className="text-[10px] text-slate-400 flex items-center gap-1">
