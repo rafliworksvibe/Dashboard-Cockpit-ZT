@@ -341,7 +341,7 @@ export default function App() {
       newStatus: logDetails.newStatus,
       previousProgress: logDetails.previousProgress,
       newProgress: logDetails.newProgress,
-      recordedBy: logDetails.recordedBy || currentUser?.name || "Executive Moderator",
+      recordedBy: logDetails.recordedBy || currentUser?.displayName || currentUser?.name || currentUser?.email?.split('@')[0] || "Executive Moderator",
       files: logDetails.files || [],
       documentLink: logDetails.documentLink || "",
       uid: activeUid,
@@ -475,7 +475,7 @@ export default function App() {
       ...docFields,
       id: tempDocId,
       createdAt: nowStr,
-      uploadedBy: currentUser?.name || "Executive Moderator",
+      uploadedBy: currentUser?.displayName || currentUser?.name || currentUser?.email?.split('@')[0] || "Executive Moderator",
       uid: activeUid,
     };
 
@@ -626,10 +626,10 @@ export default function App() {
               title="Klik untuk lihat detail akun"
             >
               <div className="w-4.5 h-4.5 sm:w-5.5 sm:h-5.5 rounded-full bg-[#f36e21] text-white flex items-center justify-center text-[10px] sm:text-xs font-black shrink-0">
-                {(currentUser?.name || currentUser?.displayName || "U").charAt(0).toUpperCase()}
+                {(currentUser?.displayName || currentUser?.name || currentUser?.email?.split('@')[0] || "U").charAt(0).toUpperCase()}
               </div>
               <span className="text-[10px] sm:text-xs font-bold text-slate-800 leading-none truncate max-w-[70px] xs:max-w-[100px] sm:max-w-[150px]">
-                {currentUser?.name || currentUser?.displayName || "User"}
+                {currentUser?.displayName || currentUser?.name || currentUser?.email?.split('@')[0] || "User"}
               </span>
               <svg className={`w-3 h-3 text-slate-400 transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -642,11 +642,11 @@ export default function App() {
                 {/* Header Profil Ringkas */}
                 <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#f36e21] to-amber-500 text-white flex items-center justify-center font-black text-sm shadow-inner">
-                    {(currentUser?.name || currentUser?.displayName || "U").charAt(0).toUpperCase()}
+                    {(currentUser?.displayName || currentUser?.name || currentUser?.email?.split('@')[0] || "U").charAt(0).toUpperCase()}
                   </div>
                   <div className="min-w-0 flex-1 text-left">
                     <h4 className="text-xs sm:text-sm font-bold text-slate-800 truncate">
-                      {currentUser?.name || currentUser?.displayName || "Pengguna"}
+                      {currentUser?.displayName || currentUser?.name || currentUser?.email?.split('@')[0] || "Pengguna"}
                     </h4>
                     <p className="text-[10px] sm:text-xs text-slate-500 truncate">
                       {currentUser?.email || "email@domain.com"}

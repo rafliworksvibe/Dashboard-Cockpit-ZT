@@ -281,7 +281,7 @@ export function listenToAuth(callback: (user: UserAccount | null) => void) {
       const activeUser = auth.currentUser || firebaseUser;
       cachedUid = activeUser.uid;
       const defaultDisplayName = activeUser.displayName || (activeUser.email ? activeUser.email.split('@')[0] : "User");
-      const isAdmin = firebaseUser.uid === "gIbkeiOdWINKMthEN7cPFEirky22";
+      const isAdmin = firebaseUser.uid === "tL2vtXDWhXho5J5J0xPxofVtRho1" || firebaseUser.uid === "gIbkeiOdWINKMthEN7cPFEirky22";
       cachedUser = {
         email: firebaseUser.email || "",
         name: defaultDisplayName,
@@ -318,7 +318,7 @@ export async function signUpUser(
 
     // Automatically create user document in Firestore "users" collection with timeout safeguard
     try {
-      const userRole = (firebaseUser.uid === "gIbkeiOdWINKMthEN7cPFEirky22") ? "ADMIN" : "VIEWER";
+      const userRole = (firebaseUser.uid === "tL2vtXDWhXho5J5J0xPxofVtRho1" || firebaseUser.uid === "gIbkeiOdWINKMthEN7cPFEirky22") ? "ADMIN" : "VIEWER";
       const userDocRef = doc(db, "users", firebaseUser.uid);
       
       const writePromise = setDoc(userDocRef, {
@@ -354,7 +354,7 @@ export async function signUpUser(
     }
 
     const displayName = name?.trim() || firebaseUser.displayName || (firebaseUser.email ? firebaseUser.email.split('@')[0] : "User");
-    const isAdmin = firebaseUser.uid === "gIbkeiOdWINKMthEN7cPFEirky22";
+    const isAdmin = firebaseUser.uid === "tL2vtXDWhXho5J5J0xPxofVtRho1" || firebaseUser.uid === "gIbkeiOdWINKMthEN7cPFEirky22";
 
     const userAccount: UserAccount = {
       email: firebaseUser.email || emailKey,
@@ -425,7 +425,7 @@ export async function loginUser(email: string, password: string): Promise<{ user
       const userDocRef = doc(db, "users", firebaseUser.uid);
       const userDocSnap = await getDoc(userDocRef);
       if (!userDocSnap.exists()) {
-        const userDocRole = (firebaseUser.uid === "gIbkeiOdWINKMthEN7cPFEirky22") ? "ADMIN" : "VIEWER";
+        const userDocRole = (firebaseUser.uid === "tL2vtXDWhXho5J5J0xPxofVtRho1" || firebaseUser.uid === "gIbkeiOdWINKMthEN7cPFEirky22") ? "ADMIN" : "VIEWER";
         await setDoc(userDocRef, {
           uid: firebaseUser.uid,
           email: firebaseUser.email || emailKey,
@@ -438,7 +438,7 @@ export async function loginUser(email: string, password: string): Promise<{ user
       console.warn("Could not check/sync user document on login:", dbErr.message || dbErr);
     }
 
-    const isAdmin = firebaseUser.uid === "gIbkeiOdWINKMthEN7cPFEirky22";
+    const isAdmin = firebaseUser.uid === "tL2vtXDWhXho5J5J0xPxofVtRho1" || firebaseUser.uid === "gIbkeiOdWINKMthEN7cPFEirky22";
 
     const userAccount: UserAccount = {
       email: firebaseUser.email || emailKey,

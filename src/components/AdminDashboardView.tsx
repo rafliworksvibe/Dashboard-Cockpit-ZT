@@ -61,7 +61,7 @@ export default function AdminDashboardView({
         userMap.set(uId, {
           ...u,
           uid: uId,
-          name: u.name || u.displayName || (u.email ? u.email.split('@')[0] : "Pengguna"),
+          name: u.displayName || u.name || (u.email ? u.email.split('@')[0] : "Pengguna"),
           email: u.email || "-"
         });
       }
@@ -334,6 +334,9 @@ export default function AdminDashboardView({
               filteredUsers.map((user) => {
                 const uKey = user.uid || user.id;
                 const isSelected = uKey === selectedUserId;
+                const resolvedName = user.displayName || user.name || (user.email && user.email !== "-" ? user.email.split('@')[0] : "Pengguna");
+                const initials = resolvedName.charAt(0).toUpperCase();
+
                 return (
                   <div
                     key={uKey}
@@ -345,15 +348,17 @@ export default function AdminDashboardView({
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`p-2.5 rounded-xl shrink-0 flex items-center justify-center ${
-                        isSelected ? "bg-slate-800 text-white" : "bg-white text-slate-500 shadow-sm border border-slate-100"
+                      <div className={`w-9 h-9 rounded-xl shrink-0 flex items-center justify-center font-black text-xs shadow-xs ${
+                        isSelected 
+                          ? "bg-slate-800 text-white border border-slate-700" 
+                          : "bg-[#f36e21] text-white"
                       }`}>
-                        <User className="w-4 h-4" />
+                        {initials}
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-extrabold text-xs tracking-tight truncate max-w-[150px]">
-                            {user.name || user.email || "Pengguna"}
+                            {resolvedName}
                           </span>
                           <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider shrink-0 ${
                             user.role === "ADMIN" 
@@ -399,11 +404,13 @@ export default function AdminDashboardView({
             <div className="border-b border-slate-100 pb-5 mb-5">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3.5">
-                  <div className="w-12 h-12 bg-indigo-600 text-white font-black text-lg rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-600/15">
-                    {(selectedUserData.name || "U")[0].toUpperCase()}
+                  <div className="w-12 h-12 bg-[#f36e21] text-white font-black text-lg rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/15">
+                    {(selectedUserData.displayName || selectedUserData.name || (selectedUserData.email && selectedUserData.email !== "-" ? selectedUserData.email.split('@')[0] : "Pengguna")).charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <h3 className="text-base font-black text-slate-800">{selectedUserData.name || selectedUserData.email || "Pengguna"}</h3>
+                    <h3 className="text-base font-black text-slate-800">
+                      {selectedUserData.displayName || selectedUserData.name || (selectedUserData.email && selectedUserData.email !== "-" ? selectedUserData.email.split('@')[0] : "Pengguna")}
+                    </h3>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                       <span className="text-[10px] font-black bg-rose-50 text-rose-600 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                         {selectedUserData.roleName || selectedUserData.role}
