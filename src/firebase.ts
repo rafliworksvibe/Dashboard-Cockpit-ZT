@@ -4,7 +4,7 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAIEvCy5HclftUp7CVwmWU4lv7pons1wqI",
+  apiKey: "",
   authDomain: "dashboard-cockpit-zt-49a0b.firebaseapp.com",
   projectId: "dashboard-cockpit-zt-49a0b",
   storageBucket: "dashboard-cockpit-zt-49a0b.firebasestorage.app",
